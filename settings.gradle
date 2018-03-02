@@ -1,0 +1,19 @@
+rootProject.name = 'kmedialayer-root'
+
+include(
+		'kmedialayer-common',
+		'kmedialayer',
+		'kmedialayer-js',
+		'kmedialayer-native',
+		//'kmedialayer-android',
+)
+
+def register(String base) {
+	findProject(":$base-common")?.projectDir = file("$base/common")
+	findProject(":$base")?.projectDir = file("$base/jvm")
+	findProject(":$base-js")?.projectDir = file("$base/js")
+	findProject(":$base-android")?.projectDir = file("$base/android")
+	findProject(":$base-native")?.projectDir = file("$base/native")
+}
+
+register('kmedialayer')
