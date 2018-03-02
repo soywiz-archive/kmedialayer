@@ -5,6 +5,7 @@ data class WindowConfig(
     val height: Int = 480,
     val title: String = "KMediaLayer"
 )
+
 expect object Kml {
     fun createWindow(config: WindowConfig, listener: KMLWindowListener)
 }
@@ -22,5 +23,8 @@ open class KMLWindowListener {
     }
 
     open fun gamepadUpdate(button: Int, pressed: Boolean, ratio: Double) {
+    }
+
+    open fun mouseUpdate(x: Int, y: Int, buttons: Int) {
     }
 }

@@ -5,7 +5,7 @@ import platform.GLUT.*
 import platform.OpenGL.*
 import platform.OpenGLCommon.*
 
-lateinit var globalListener: KMLWindowListener
+private lateinit var globalListener: KMLWindowListener
 
 actual object Kml {
     actual fun createWindow(config: WindowConfig, listener: KMLWindowListener) {
@@ -20,6 +20,7 @@ actual object Kml {
         glutInitDisplayMode(GLUT_RGB or GLUT_DOUBLE or GLUT_DEPTH)
 
         // Set window size
+        //glutSetOption(GLUT_ACTION_ON_WINDOW_CLOSE, GLUT_ACTION_GLUTMAINLOOP_RETURNS);
         glutInitWindowSize(config.width, config.height)
         glutInitWindowPosition(
             (glutGet(GLUT_SCREEN_WIDTH)-config.width)/2,
@@ -30,19 +31,44 @@ actual object Kml {
         glutCreateWindow(config.title)
 
         // register Display Function
-        glutDisplayFunc(staticCFunction(::display))
+        glutDisplayFunc(staticCFunction(::onDisplay))
+        glutMouseFunc(staticCFunction(::onMouseButton))
+        glutMotionFunc(staticCFunction(::onMouseMotion));
+        glutPassiveMotionFunc(staticCFunction(::onMouseMotion));
 
         // register Idle Function
-        glutIdleFunc(staticCFunction(::display))
+        glutIdleFunc(staticCFunction(::onDisplay))
 
         listener.init(KmlGl)
 
         // run GLUT mainloop
         glutMainLoop()
+        //glutMainLoopEvent()
     }
 }
 
-fun display() {
+private fun onDisplay() {
     globalListener.render(KmlGl)
     glutSwapBuffers()
+}
+
+private var mouseX = 0
+private var mouseY = 0
+private var mouseButtons = 0
+
+private fun onMouseButton(button: Int, state: Int, x: Int, y: Int) {
+    mouseX = x
+    mouseY = y
+    if (state == GLUT_DOWN) {
+        mouseButtons = mouseButtons or (1 shl button)
+    } else {
+        mouseButtons = mouseButtons and (1 shl button).inv()
+    }
+    globalListener.mouseUpdate(mouseX, mouseY, mouseButtons)
+}
+
+private fun onMouseMotion(x: Int, y: Int) {
+    mouseX = x
+    mouseY = y
+    globalListener.mouseUpdate(mouseX, mouseY, mouseButtons)
 }

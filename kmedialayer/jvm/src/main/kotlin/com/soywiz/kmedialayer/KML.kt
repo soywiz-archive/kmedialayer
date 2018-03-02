@@ -1,5 +1,6 @@
 package com.soywiz.kmedialayer
 
+import org.lwjgl.glfw.*
 import org.lwjgl.glfw.GLFW.*
 import org.lwjgl.opengl.GL.*
 import org.lwjgl.system.MemoryUtil.*
@@ -29,6 +30,33 @@ actual object Kml {
         glfwMakeContextCurrent(window)
 
         listener.init(KmlGl)
+
+        var mouseX = 0
+        var mouseY = 0
+        var mouseButtons = 0
+
+        fun updatedMouse() {
+            listener.mouseUpdate(mouseX, mouseY, mouseButtons)
+        }
+
+        glfwSetCursorPosCallback(window, object : GLFWCursorPosCallback() {
+            override fun invoke(window: kotlin.Long, xpos: kotlin.Double, ypos: kotlin.Double) {
+                mouseX = xpos.toInt()
+                mouseY = ypos.toInt()
+                updatedMouse()
+            }
+        })
+
+        glfwSetMouseButtonCallback(window, object : GLFWMouseButtonCallback() {
+            override fun invoke(window: kotlin.Long, button: kotlin.Int, action: kotlin.Int, mods: kotlin.Int) {
+                if (action == GLFW_PRESS) {
+                    mouseButtons = mouseButtons or (1 shl button)
+                } else {
+                    mouseButtons = mouseButtons and (1 shl button).inv()
+                }
+                updatedMouse()
+            }
+        })
 
         while (glfwWindowShouldClose(window) == 0) {
             glfwMakeContextCurrent(window)
