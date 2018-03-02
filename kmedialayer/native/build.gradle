@@ -1,10 +1,11 @@
 apply plugin: 'konan'
 
 //konan.targets = ['iphone', 'iphone_sim', 'macbook', 'linux', 'raspberrypi', 'android_arm32', 'android_arm64', 'wasm32']
-//konan.targets = ['macbook']
-konan.targets = ['iphone', 'iphone_sim', 'macbook', 'linux', 'raspberrypi', 'android_arm32', 'android_arm64']
+konan.targets = ['macbook']
+//konan.targets = ['iphone', 'iphone_sim', 'macbook', 'linux', 'raspberrypi', 'android_arm32', 'android_arm64']
 
 konanArtifacts {
+	/*
     interop('mytest') {
         defFile 'src/main/c_interop/mytest.def'
     }
@@ -30,6 +31,24 @@ konanArtifacts {
 			artifact 'kmedialayer'
 		}
 		extraOpts '-tr'
+	}
+	*/
+
+	//library('kmedialayer') {
+	//	enableMultiplatform true
+//
+	//	target('macbook') {
+	//	}
+	//}
+
+	program('kmedialayer-native') {
+		enableMultiplatform true
+
+		//srcDir 'src/main/kotlin'
+
+		//libraries {
+		//	artifact 'kmedialayer'
+		//}
 	}
 }
 
