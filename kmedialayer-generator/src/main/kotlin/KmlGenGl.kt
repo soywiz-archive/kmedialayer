@@ -68,9 +68,9 @@ object KmlGenGl {
         println("    val gl = canvas.getContext(\"webgl\") as WebGLRenderingContext")
         println("    private val items = arrayOfNulls<Any>(8 * 1024)")
         println("    private val freeList = (1 until items.size).reversed().toMutableList()")
-        println("    private fun <T> T.alloc(): Int = run { val index = freeList.removeAt(freeList.size - 1); items[index] = this; index }")
-        println("    private fun <T> Int.get(): T = items[this] as T")
-        println("    private fun <T> Int.free(): T = run { val out = items[this] as T; freeList += this; items[this] = null; out }")
+        println("    private fun <T> T.alloc(): Int = run { val index = freeList.removeAt(freeList.size - 1); items[index] = this; (this.asDynamic()).id = index; index }")
+        println("    private fun <T> Int.get(): T = items[this].unsafeCast<T>()")
+        println("    private fun <T> Int.free(): T = run { val out = items[this].unsafeCast<T>(); freeList += this; items[this] = null; out }")
         println("")
         for (func in OpenglDesc.functions.values) {
             val call = func.jsBody ?: func.rettype.toJSReturn("gl.${func.jsName}(${func.args.joinToString(", ") { it.type.toJSParam(it.name) }})")
@@ -141,7 +141,9 @@ object OpenglDesc {
         override fun toJVM(param: String): String = "$param.nioBuffer"
     }
 
-    object GlVoidPtr : GlTypePtr("KmlBuffer")
+    object GlVoidPtr : GlTypePtr("KmlBuffer") {
+        override fun toJSParam(param: String): String = "$param.arrayByte"
+    }
     object GlIntPtr : GlTypePtr("KmlBuffer")
     object GlCharPtr : GlTypePtr("KmlBuffer")
     object GlFloatPtr : GlTypePtr("KmlBuffer")
@@ -607,7 +609,8 @@ object OpenglDesc {
             "length" to GlIntPtr,
             "size" to GlIntPtr,
             "type" to GlIntPtr,
-            "name" to GlCharPtr
+            "name" to GlCharPtr,
+            jsBody = "run { val info = gl.getActiveAttrib(program.get(), index)!!; size.arrayInt[0] = info.size; type.arrayInt[0] = info.type; name.putAsciiString(info.name); length.arrayInt[0] = info.size + 1 }"
         )
 
         function(
@@ -619,7 +622,8 @@ object OpenglDesc {
             "length" to GlIntPtr,
             "size" to GlIntPtr,
             "type" to GlIntPtr,
-            "name" to GlCharPtr
+            "name" to GlCharPtr,
+            jsBody = "run { val info = gl.getActiveUniform(program.get(), index)!!; size.arrayInt[0] = info.size; type.arrayInt[0] = info.type; name.putAsciiString(info.name); length.arrayInt[0] = info.size + 1 }"
         )
 
         function(
@@ -628,13 +632,17 @@ object OpenglDesc {
             "program" to GlProgram,
             "maxCount" to GlInt,
             "count" to GlIntPtr,
-            "shaders" to GlIntPtr
+            "shaders" to GlIntPtr,
+            jsBody = "run { val ashaders = gl.getAttachedShaders(program.get())!!; count.arrayInt[0] = ashaders.size; for (n in 0 until min(maxCount, ashaders.size)) shaders.arrayInt[n] = ashaders[n].asDynamic().id.unsafeCast<Int>() }"
         )
+
+        fun getBase(type: String) = "run { data.array$type[0] = gl.getParameter(pname).unsafeCast<$type>() }"
+
         function(GlInt, "glGetAttribLocation", "program" to GlProgram, "name" to GlString)
-        function(GlVoid, "glGetBooleanv", "pname" to GlInt, "data" to GlBoolPtr)
-        function(GlVoid, "glGetBufferParameteriv", "target" to GlInt, "pname" to GlInt, "params" to GlIntPtr)
+        function(GlVoid, "glGetBooleanv", "pname" to GlInt, "data" to GlBoolPtr, jsBody = getBase("Int"))
+        function(GlVoid, "glGetBufferParameteriv", "target" to GlInt, "pname" to GlInt, "params" to GlIntPtr, jsBody = "run { params.arrayInt[0] = gl.getBufferParameter(target, pname).unsafeCast<Int>() }")
         function(GlInt, "glGetError")
-        function(GlVoid, "glGetFloatv", "pname" to GlInt, "data" to GlFloatPtr)
+        function(GlVoid, "glGetFloatv", "pname" to GlInt, "data" to GlFloatPtr, jsBody = getBase("Float"))
         function(
             GlVoid,
             "glGetFramebufferAttachmentParameteriv",
@@ -643,8 +651,8 @@ object OpenglDesc {
             "pname" to GlInt,
             "params" to GlIntPtr
         )
-        function(GlVoid, "glGetIntegerv", "pname" to GlInt, "data" to GlIntPtr)
-        function(GlVoid, "glGetProgramiv", "program" to GlProgram, "pname" to GlInt, "params" to GlIntPtr)
+        function(GlVoid, "glGetIntegerv", "pname" to GlInt, "data" to GlIntPtr, jsBody = getBase("Int"))
+        function(GlVoid, "glGetProgramiv", "program" to GlProgram, "pname" to GlInt, "params" to GlIntPtr, jsBody = "run { params.arrayInt[0] = gl.getProgramParameter(program.get(), pname).unsafeCast<Int>() }")
         function(
             GlVoid,
             "glGetProgramInfoLog",
@@ -654,7 +662,7 @@ object OpenglDesc {
             "infoLog" to GlCharPtr
         )
         function(GlVoid, "glGetRenderbufferParameteriv", "target" to GlInt, "pname" to GlInt, "params" to GlIntPtr)
-        function(GlVoid, "glGetShaderiv", "shader" to GlShader, "pname" to GlInt, "params" to GlIntPtr)
+        function(GlVoid, "glGetShaderiv", "shader" to GlShader, "pname" to GlInt, "params" to GlIntPtr, jsBody = "run { params.arrayInt[0] = gl.getShaderParameter(shader.get(), pname).unsafeCast<Int>() }")
         function(
             GlVoid,
             "glGetShaderInfoLog",
@@ -680,14 +688,14 @@ object OpenglDesc {
             "source" to GlCharPtr
         )
         function(GlString, "glGetString", "name" to GlInt, jsBody = jsBodyGetParam("String"))
-        function(GlVoid, "glGetTexParameterfv", "target" to GlInt, "pname" to GlInt, "params" to GlFloatPtr)
-        function(GlVoid, "glGetTexParameteriv", "target" to GlInt, "pname" to GlInt, "params" to GlIntPtr)
-        function(GlVoid, "glGetUniformfv", "program" to GlProgram, "location" to GlUniformLocation, "params" to GlFloatPtr)
-        function(GlVoid, "glGetUniformiv", "program" to GlProgram, "location" to GlUniformLocation, "params" to GlIntPtr)
+        function(GlVoid, "glGetTexParameterfv", "target" to GlInt, "pname" to GlInt, "params" to GlFloatPtr, jsBody = "run { params.arrayFloat[0] = gl.getTexParameter(target, pname).unsafeCast<Float>() }")
+        function(GlVoid, "glGetTexParameteriv", "target" to GlInt, "pname" to GlInt, "params" to GlIntPtr, jsBody = "run { params.arrayInt[0] = gl.getTexParameter(target, pname).unsafeCast<Int>() }")
+        function(GlVoid, "glGetUniformfv", "program" to GlProgram, "location" to GlUniformLocation, "params" to GlFloatPtr, jsBody = "run { params.arrayFloat[0] = gl.getUniform(program.get(), location.get()).unsafeCast<Float>() }")
+        function(GlVoid, "glGetUniformiv", "program" to GlProgram, "location" to GlUniformLocation, "params" to GlIntPtr, jsBody = "run { params.arrayInt[0] = gl.getUniform(program.get(), location.get()).unsafeCast<Int>() }")
         function(GlUniformLocation, "glGetUniformLocation", "program" to GlProgram, "name" to GlString)
-        function(GlVoid, "glGetVertexAttribfv", "index" to GlInt, "pname" to GlInt, "params" to GlFloatPtr)
-        function(GlVoid, "glGetVertexAttribiv", "index" to GlInt, "pname" to GlInt, "params" to GlIntPtr)
-        function(GlVoid, "glGetVertexAttribPointerv", "index" to GlInt, "pname" to GlInt, "pointer" to GlVoidPtr)
+        function(GlVoid, "glGetVertexAttribfv", "index" to GlInt, "pname" to GlInt, "params" to GlFloatPtr, jsBody = "run { params.arrayFloat[0] = gl.getVertexAttrib(index, pname).unsafeCast<Float>() }")
+        function(GlVoid, "glGetVertexAttribiv", "index" to GlInt, "pname" to GlInt, "params" to GlIntPtr, jsBody = "run { params.arrayInt[0] = gl.getVertexAttrib(index, pname).unsafeCast<Int>() }")
+        function(GlVoid, "glGetVertexAttribPointerv", "index" to GlInt, "pname" to GlInt, "pointer" to GlVoidPtr, jsBody = "run { pointer.arrayInt[0] = gl.getVertexAttrib(index, pname).unsafeCast<Int>() }")
         function(GlVoid, "glHint", "target" to GlInt, "mode" to GlInt)
         function(GlBool, "glIsBuffer", "buffer" to GlBuffer)
         function(GlBool, "glIsEnabled", "cap" to GlInt)
@@ -729,7 +737,8 @@ object OpenglDesc {
             "shaders" to GlIntPtr,
             "binaryformat" to GlInt,
             "binary" to GlVoidPtr,
-            "length" to GlInt
+            "length" to GlInt,
+            jsBody = "throw KmlGlException(\"shaderBinary not implemented in Webgl\")"
         )
 
         // SPECIAL
@@ -763,9 +772,9 @@ object OpenglDesc {
         )
 
         function(GlVoid, "glTexParameterf", "target" to GlInt, "pname" to GlInt, "param" to GlFloat)
-        function(GlVoid, "glTexParameterfv", "target" to GlInt, "pname" to GlInt, "params" to GlFloatPtr)
+        function(GlVoid, "glTexParameterfv", "target" to GlInt, "pname" to GlInt, "params" to GlFloatPtr, jsBody = "gl.texParameterf(target, pname, params.arrayFloat[0])")
         function(GlVoid, "glTexParameteri", "target" to GlInt, "pname" to GlInt, "param" to GlInt)
-        function(GlVoid, "glTexParameteriv", "target" to GlInt, "pname" to GlInt, "params" to GlIntPtr)
+        function(GlVoid, "glTexParameteriv", "target" to GlInt, "pname" to GlInt, "params" to GlIntPtr, jsBody = "gl.texParameteri(target, pname, params.arrayInt[0])")
         function(
             GlVoid,
             "glTexSubImage2D",
@@ -812,7 +821,8 @@ object OpenglDesc {
             "location" to GlUniformLocation,
             "count" to GlInt,
             "transpose" to GlBool,
-            "value" to GlFloatPtr
+            "value" to GlFloatPtr,
+            jsBody = "gl.uniformMatrix2fv(location.get(), transpose, value.arrayFloat)"
         )
         function(
             GlVoid,
@@ -820,7 +830,8 @@ object OpenglDesc {
             "location" to GlUniformLocation,
             "count" to GlInt,
             "transpose" to GlBool,
-            "value" to GlFloatPtr
+            "value" to GlFloatPtr,
+            jsBody = "gl.uniformMatrix3fv(location.get(), transpose, value.arrayFloat)"
         )
         function(
             GlVoid,
@@ -828,7 +839,8 @@ object OpenglDesc {
             "location" to GlUniformLocation,
             "count" to GlInt,
             "transpose" to GlBool,
-            "value" to GlFloatPtr
+            "value" to GlFloatPtr,
+            jsBody = "gl.uniformMatrix4fv(location.get(), transpose, value.arrayFloat)"
         )
         function(GlVoid, "glUseProgram", "program" to GlProgram)
         function(GlVoid, "glValidateProgram", "program" to GlProgram)

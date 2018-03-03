@@ -9,3 +9,12 @@ fun KmlBuffer.toAsciiString(): String {
     }
     return out
 }
+
+fun KmlBuffer.putAsciiString(str: String): KmlBuffer {
+    var n = 0
+    for (c in str) {
+        if (baseBuffer.size >= n) baseBuffer.setByte(n++, c.toByte())
+    }
+    if (baseBuffer.size >= n) baseBuffer.setByte(n++, 0.toByte())
+    return this
+}
