@@ -12,7 +12,7 @@ class KmlGlProgram(val gl: KmlGl, val program: Int, val vertex: Int, val fragmen
     }
 
     inline fun use(callback: () -> Unit) {
-        val oldProgram = gl.getIntegerv(GL_CURRENT_PROGRAM)
+        val oldProgram = gl.getIntegerv(gl.CURRENT_PROGRAM)
         gl.useProgram(program)
         try {
             callback()
@@ -32,8 +32,8 @@ private fun KmlGl.createShader(type: Int, source: String): Int {
 // TODO: Release resources on failure
 fun KmlGl.createProgram(vertex: String, fragment: String): KmlGlProgram {
     val program = createProgram()
-    val shaderVertex = createShader(GL_VERTEX_SHADER, vertex)
-    val shaderFragment = createShader(GL_FRAGMENT_SHADER, fragment)
+    val shaderVertex = createShader(VERTEX_SHADER, vertex)
+    val shaderFragment = createShader(FRAGMENT_SHADER, fragment)
     attachShader(program, shaderVertex)
     attachShader(program, shaderFragment)
     linkProgramAndCheck(program)
@@ -56,10 +56,10 @@ class KmlGlVertexLayout(val program: KmlGlProgram) {
     }
 
     fun int(name: String, count: Int, normalized: Boolean = false): KmlGlVertexLayout =
-        add(name, GL_INT, 4, count, normalized)
+        add(name, gl.INT, 4, count, normalized)
 
     fun float(name: String, count: Int, normalized: Boolean = false): KmlGlVertexLayout =
-        add(name, GL_FLOAT, 4, count, normalized)
+        add(name, gl.FLOAT, 4, count, normalized)
 
     fun enable(): Unit = gl.run {
         for ((index, element) in elements.withIndex()) {
@@ -106,7 +106,7 @@ class KmlGlBuffer(val gl: KmlGl, val type: Int, val bufs: KmlIntBuffer) {
 
     fun setData(data: KmlBuffer): KmlGlBuffer {
         bind()
-        gl.bufferData(type, data.baseBuffer.size.toLong(), data, GL_STATIC_DRAW)
+        gl.bufferData(type, data.baseBuffer.size.toLong(), data, gl.STATIC_DRAW)
         return this
     }
 
@@ -121,5 +121,5 @@ fun KmlGl.createBuffer(type: Int): KmlGlBuffer {
     return KmlGlBuffer(this, type, bufs)
 }
 
-fun KmlGl.createArrayBuffer(): KmlGlBuffer = createBuffer(GL_ARRAY_BUFFER)
-fun KmlGl.createElementArrayBuffer(): KmlGlBuffer = createBuffer(GL_ELEMENT_ARRAY_BUFFER)
+fun KmlGl.createArrayBuffer(): KmlGlBuffer = createBuffer(ARRAY_BUFFER)
+fun KmlGl.createElementArrayBuffer(): KmlGlBuffer = createBuffer(ELEMENT_ARRAY_BUFFER)

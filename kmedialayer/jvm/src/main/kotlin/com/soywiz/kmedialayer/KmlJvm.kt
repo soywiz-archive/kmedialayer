@@ -31,7 +31,7 @@ actual object Kml {
 
         glfwMakeContextCurrent(window)
 
-        val gl = KmlGl()
+        val gl = JvmKmlGl()
         listener.init(gl)
 
         var mouseX = 0

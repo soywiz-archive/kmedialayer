@@ -16,13 +16,15 @@ object KmlGenGl {
         println("")
         println("package com.soywiz.kmedialayer")
         println("")
+        println("abstract class KmlGl {")
+        //println("    companion object {")
         for (const in OpenglDesc.constants.values) {
-            println("const val ${const.name}: Int = ${"0x%04X".format(const.value)}")
+            println("    val ${const.unprefixedName}: Int get() = ${"0x%04X".format(const.value)}")
         }
+        //println("    }")
         println("")
-        println("expect class KmlGl {")
         for (func in OpenglDesc.functions.values) {
-            println("    fun ${func.unprefixedName}(${func.args.joinToString(", ") { it.name + ": " + it.type.ktname }}): ${func.rettype.ktname}")
+            println("    abstract fun ${func.unprefixedName}(${func.args.joinToString(", ") { it.name + ": " + it.type.ktname }}): ${func.rettype.ktname}")
         }
         println("}")
         println("")
@@ -44,17 +46,19 @@ object KmlGenGl {
         println("import org.lwjgl.opengl.GL41.*")
         println("import java.nio.*")
         println("")
-        println("actual class KmlGl {")
+        println("class JvmKmlGl : KmlGl() {")
         for (func in OpenglDesc.functions.values) {
             val call = "${func.name}(${func.args.joinToString(", ") { it.type.toJVM(it.name) }})"
-            println("    actual fun ${func.unprefixedName}(${func.args.joinToString(", ") { it.name + ": " + it.type.ktname }}): ${func.rettype.ktname} = $call")
+            println("    override fun ${func.unprefixedName}(${func.args.joinToString(", ") { it.name + ": " + it.type.ktname }}): ${func.rettype.ktname} = $call")
         }
         println("}")
         println("")
     }
 
     object OpenglDesc {
-        data class Constant(val name: String, val value: Int)
+        data class Constant(val name: String, val value: Int) {
+            val unprefixedName = name.removePrefix("GL_")
+        }
         data class Argument(val name: String, val type: GlType)
         data class Function(val name: String, val rettype: GlType, val args: List<Argument>) {
             val unprefixedName = name.removePrefix("gl").decapitalize()

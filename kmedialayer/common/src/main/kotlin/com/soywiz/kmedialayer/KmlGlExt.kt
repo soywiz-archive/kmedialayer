@@ -11,7 +11,7 @@ private inline fun KmlGl.getInfoLog(
     getiv: (Int, Int) -> Int,
     getInfoLog: (Int, Int, KmlBuffer?, KmlBuffer?) -> Unit
 ): String {
-    val size = getiv(obj, GL_INFO_LOG_LENGTH)
+    val size = getiv(obj, INFO_LOG_LENGTH)
     val sizev = KmlIntBuffer(1)
     val mbuffer = KmlByteBuffer(size)
     getInfoLog(obj, size, sizev, mbuffer)
@@ -23,14 +23,14 @@ fun KmlGl.getProgramInfoLog(shader: Int): String = getInfoLog(shader, ::getProgr
 
 fun KmlGl.compileShaderAndCheck(shader: Int) {
     compileShader(shader)
-    if (getShaderiv(shader, GL_COMPILE_STATUS) != GL_TRUE) {
+    if (getShaderiv(shader, COMPILE_STATUS) != TRUE) {
         throw KmlGlException(getShaderInfoLog(shader))
     }
 }
 
 fun KmlGl.linkProgramAndCheck(program: Int) {
     linkProgram(program)
-    if (getProgramiv(program, GL_LINK_STATUS) != GL_TRUE) {
+    if (getProgramiv(program, LINK_STATUS) != TRUE) {
         throw KmlGlException(getProgramInfoLog(program))
     }
 }

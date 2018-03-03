@@ -43,10 +43,10 @@ object KmedilayerSample {
                     )))
                     n++
                     clearColor(.5f, .55f, .6f, 1f)
-                    clear(GL_COLOR_BUFFER_BIT)
+                    clear(COLOR_BUFFER_BIT)
                     layout.use {
                         buffer.bind()
-                        drawArrays(GL_TRIANGLES, 0, 3)
+                        drawArrays(TRIANGLES, 0, 3)
                     }
                 }
 
