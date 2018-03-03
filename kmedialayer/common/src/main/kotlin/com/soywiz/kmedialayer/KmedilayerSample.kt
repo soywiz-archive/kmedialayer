@@ -8,13 +8,30 @@ object KmedilayerSample {
                 480
             ), object : KMLWindowListener() {
                 override fun init(gl: KmlGl) = gl.run {
-                    val shader1 = CreateShader(GL_VERTEX_SHADER)
-                    println(shader1)
+                    val program = createProgram()
+                    val shaderVertex = createShader(GL_VERTEX_SHADER)
+                    val shaderFragment = createShader(GL_FRAGMENT_SHADER)
+                    shaderSource(shaderVertex, """
+                        attribute vec2 aPos;
+                        void main() {
+                            gl_Position = vec4(aPos, 0.0, 1.0);
+                        }
+                    """)
+                    shaderSource(shaderFragment, """
+                        void main(void) {
+                            gl_FragColor = vec4(0.0, 1.0, 0.0, 1.0);
+                        }
+                    """)
+                    compileShader(shaderFragment)
+                    //compileShader(shaderVertexasaclass)
+                    attachShader(program, shaderVertex)
+                    attachShader(program, shaderFragment)
+                    linkProgram(program)
                 }
 
                 override fun render(gl: KmlGl) = gl.run {
-                    ClearColor(1f, 1f, 0f, 1f)
-                    Clear(GL_COLOR_BUFFER_BIT)
+                    clearColor(.5f, .55f, .6f, 1f)
+                    clear(GL_COLOR_BUFFER_BIT)
                 }
 
                 override fun keyUpdate(keyCode: Int, pressed: Boolean) {

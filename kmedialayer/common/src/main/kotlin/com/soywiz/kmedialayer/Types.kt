@@ -1,8 +1,8 @@
 package com.soywiz.kmedialayer
 
-class KmlBoolPtr
-class KmlIntPtr
-class KmlFloatPtr
-class KmlVoidPtr
-class KmlVoidPtrPtr
-class KmlCharPtr
+class GlBoolPtr
+class GlIntPtr
+class GlFloatPtr
+class GlVoidPtr
+class GlVoidPtrPtr
+class GlCharPtr

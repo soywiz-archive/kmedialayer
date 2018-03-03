@@ -1,6 +1,8 @@
 rootProject.name = 'kmedialayer-root'
 
 include(
+		'kmedialayer-generator',
+
 		'kmedialayer-common',
 		'kmedialayer',
 		//'kmedialayer-js',

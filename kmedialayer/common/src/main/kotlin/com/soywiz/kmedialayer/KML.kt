@@ -15,8 +15,8 @@ open class KMLWindowListener {
     }
 
     open fun render(gl: KmlGl): Unit = gl.run {
-        ClearColor(1f, 0f, 1f, 1f)
-        Clear(GL_COLOR_BUFFER_BIT)
+        clearColor(1f, 0f, 1f, 1f)
+        clear(GL_COLOR_BUFFER_BIT)
     }
 
     open fun keyUpdate(keyCode: Int, pressed: Boolean) {
