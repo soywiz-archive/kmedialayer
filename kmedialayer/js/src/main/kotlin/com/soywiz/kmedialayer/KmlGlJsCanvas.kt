@@ -6,6 +6,7 @@ package com.soywiz.kmedialayer
 
 import org.w3c.dom.*
 import org.khronos.webgl.*
+import kotlin.math.*
 
 class KmlGlJsCanvas(val canvas: HTMLCanvasElement) : KmlGl() {
     val gl = canvas.getContext("webgl") as WebGLRenderingContext
@@ -77,16 +78,16 @@ class KmlGlJsCanvas(val canvas: HTMLCanvasElement) : KmlGl() {
     override fun getBufferParameteriv(target: Int, pname: Int, params: KmlBuffer): Unit = run { params.arrayInt[0] = gl.getBufferParameter(target, pname).unsafeCast<Int>() }
     override fun getError(): Int = gl.getError()
     override fun getFloatv(pname: Int, data: KmlBuffer): Unit = run { data.arrayFloat[0] = gl.getParameter(pname).unsafeCast<Float>() }
-    override fun getFramebufferAttachmentParameteriv(target: Int, attachment: Int, pname: Int, params: KmlBuffer): Unit = gl.getFramebufferAttachmentParameteriv(target, attachment, pname, params)
+    override fun getFramebufferAttachmentParameteriv(target: Int, attachment: Int, pname: Int, params: KmlBuffer): Unit = run { params.arrayInt[0] = gl.getFramebufferAttachmentParameter(target, attachment, pname).unsafeCast<Int>() }
     override fun getIntegerv(pname: Int, data: KmlBuffer): Unit = run { data.arrayInt[0] = gl.getParameter(pname).unsafeCast<Int>() }
     override fun getProgramiv(program: Int, pname: Int, params: KmlBuffer): Unit = run { params.arrayInt[0] = gl.getProgramParameter(program.get(), pname).unsafeCast<Int>() }
-    override fun getProgramInfoLog(program: Int, bufSize: Int, length: KmlBuffer, infoLog: KmlBuffer): Unit = gl.getProgramInfoLog(program.get(), bufSize, length, infoLog)
-    override fun getRenderbufferParameteriv(target: Int, pname: Int, params: KmlBuffer): Unit = gl.getRenderbufferParameteriv(target, pname, params)
+    override fun getProgramInfoLog(program: Int, bufSize: Int, length: KmlBuffer, infoLog: KmlBuffer): Unit = run { val str = gl.getProgramInfoLog(program.get()) ?: ""; length.arrayInt[0] = str.length; infoLog.putAsciiString(str) }
+    override fun getRenderbufferParameteriv(target: Int, pname: Int, params: KmlBuffer): Unit = run { params.arrayInt[0] = gl.getRenderbufferParameter(target, pname).unsafeCast<Int>() }
     override fun getShaderiv(shader: Int, pname: Int, params: KmlBuffer): Unit = run { params.arrayInt[0] = gl.getShaderParameter(shader.get(), pname).unsafeCast<Int>() }
-    override fun getShaderInfoLog(shader: Int, bufSize: Int, length: KmlBuffer, infoLog: KmlBuffer): Unit = gl.getShaderInfoLog(shader.get(), bufSize, length, infoLog)
-    override fun getShaderPrecisionFormat(shadertype: Int, precisiontype: Int, range: KmlBuffer, precision: KmlBuffer): Unit = gl.getShaderPrecisionFormat(shadertype, precisiontype, range, precision)
-    override fun getShaderSource(shader: Int, bufSize: Int, length: KmlBuffer, source: KmlBuffer): Unit = gl.getShaderSource(shader.get(), bufSize, length, source)
-    override fun getString(name: Int): String = gl.getParameter() as String
+    override fun getShaderInfoLog(shader: Int, bufSize: Int, length: KmlBuffer, infoLog: KmlBuffer): Unit = run { val str = gl.getShaderInfoLog(shader.get()) ?: ""; length.arrayInt[0] = str.length; infoLog.putAsciiString(str) }
+    override fun getShaderPrecisionFormat(shadertype: Int, precisiontype: Int, range: KmlBuffer, precision: KmlBuffer): Unit = run { val info = gl.getShaderPrecisionFormat(shadertype, precisiontype); if (info != null) { range.arrayInt[0] = info.rangeMin; range.arrayInt[1] = info.rangeMax; precision.arrayInt[0] = info.precision } }
+    override fun getShaderSource(shader: Int, bufSize: Int, length: KmlBuffer, source: KmlBuffer): Unit = run { val str = gl.getShaderSource(shader.get()) ?: ""; length.arrayInt[0] = str.length; source.putAsciiString(str) }
+    override fun getString(name: Int): String = gl.getParameter(name).unsafeCast<String>()
     override fun getTexParameterfv(target: Int, pname: Int, params: KmlBuffer): Unit = run { params.arrayFloat[0] = gl.getTexParameter(target, pname).unsafeCast<Float>() }
     override fun getTexParameteriv(target: Int, pname: Int, params: KmlBuffer): Unit = run { params.arrayInt[0] = gl.getTexParameter(target, pname).unsafeCast<Int>() }
     override fun getUniformfv(program: Int, location: Int, params: KmlBuffer): Unit = run { params.arrayFloat[0] = gl.getUniform(program.get(), location.get()).unsafeCast<Float>() }

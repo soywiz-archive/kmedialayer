@@ -63,6 +63,7 @@ object KmlGenGl {
         println("")
         println("import org.w3c.dom.*")
         println("import org.khronos.webgl.*")
+        println("import kotlin.math.*")
         println("")
         println("class KmlGlJsCanvas(val canvas: HTMLCanvasElement) : KmlGl() {")
         println("    val gl = canvas.getContext(\"webgl\") as WebGLRenderingContext")
@@ -454,7 +455,6 @@ object OpenglDesc {
 
         fun jsBodyDelete(delete: String, items: String = "items"): String = "run { for (p in 0 until n) gl.$delete($items.arrayInt[p].free()) }"
         fun jsBodyCreate(create: String, items: String = "items"): String = "run { for (p in 0 until n) $items.arrayInt[p] = gl.$create().alloc() }"
-        fun jsBodyGetParam(type: String): String = "gl.getParameter() as $type"
 
         function(GlVoid, "glActiveTexture", "texture" to GlTexture)
         function(GlVoid, "glAttachShader", "program" to GlProgram, "shader" to GlShader)
@@ -649,7 +649,8 @@ object OpenglDesc {
             "target" to GlInt,
             "attachment" to GlInt,
             "pname" to GlInt,
-            "params" to GlIntPtr
+            "params" to GlIntPtr,
+            jsBody = "run { params.arrayInt[0] = gl.getFramebufferAttachmentParameter(target, attachment, pname).unsafeCast<Int>() }"
         )
         function(GlVoid, "glGetIntegerv", "pname" to GlInt, "data" to GlIntPtr, jsBody = getBase("Int"))
         function(GlVoid, "glGetProgramiv", "program" to GlProgram, "pname" to GlInt, "params" to GlIntPtr, jsBody = "run { params.arrayInt[0] = gl.getProgramParameter(program.get(), pname).unsafeCast<Int>() }")
@@ -659,9 +660,10 @@ object OpenglDesc {
             "program" to GlProgram,
             "bufSize" to GlInt,
             "length" to GlIntPtr,
-            "infoLog" to GlCharPtr
+            "infoLog" to GlCharPtr,
+            jsBody = "run { val str = gl.getProgramInfoLog(program.get()) ?: \"\"; length.arrayInt[0] = str.length; infoLog.putAsciiString(str) }"
         )
-        function(GlVoid, "glGetRenderbufferParameteriv", "target" to GlInt, "pname" to GlInt, "params" to GlIntPtr)
+        function(GlVoid, "glGetRenderbufferParameteriv", "target" to GlInt, "pname" to GlInt, "params" to GlIntPtr, jsBody = "run { params.arrayInt[0] = gl.getRenderbufferParameter(target, pname).unsafeCast<Int>() }")
         function(GlVoid, "glGetShaderiv", "shader" to GlShader, "pname" to GlInt, "params" to GlIntPtr, jsBody = "run { params.arrayInt[0] = gl.getShaderParameter(shader.get(), pname).unsafeCast<Int>() }")
         function(
             GlVoid,
@@ -669,7 +671,8 @@ object OpenglDesc {
             "shader" to GlShader,
             "bufSize" to GlInt,
             "length" to GlIntPtr,
-            "infoLog" to GlCharPtr
+            "infoLog" to GlCharPtr,
+            jsBody = "run { val str = gl.getShaderInfoLog(shader.get()) ?: \"\"; length.arrayInt[0] = str.length; infoLog.putAsciiString(str) }"
         )
         function(
             GlVoid,
@@ -677,7 +680,8 @@ object OpenglDesc {
             "shadertype" to GlInt,
             "precisiontype" to GlInt,
             "range" to GlIntPtr,
-            "precision" to GlIntPtr
+            "precision" to GlIntPtr,
+            jsBody = "run { val info = gl.getShaderPrecisionFormat(shadertype, precisiontype); if (info != null) { range.arrayInt[0] = info.rangeMin; range.arrayInt[1] = info.rangeMax; precision.arrayInt[0] = info.precision } }"
         )
         function(
             GlVoid,
@@ -685,9 +689,10 @@ object OpenglDesc {
             "shader" to GlShader,
             "bufSize" to GlInt,
             "length" to GlIntPtr,
-            "source" to GlCharPtr
+            "source" to GlCharPtr,
+            jsBody = "run { val str = gl.getShaderSource(shader.get()) ?: \"\"; length.arrayInt[0] = str.length; source.putAsciiString(str) }"
         )
-        function(GlString, "glGetString", "name" to GlInt, jsBody = jsBodyGetParam("String"))
+        function(GlString, "glGetString", "name" to GlInt, jsBody = "gl.getParameter(name).unsafeCast<String>()")
         function(GlVoid, "glGetTexParameterfv", "target" to GlInt, "pname" to GlInt, "params" to GlFloatPtr, jsBody = "run { params.arrayFloat[0] = gl.getTexParameter(target, pname).unsafeCast<Float>() }")
         function(GlVoid, "glGetTexParameteriv", "target" to GlInt, "pname" to GlInt, "params" to GlIntPtr, jsBody = "run { params.arrayInt[0] = gl.getTexParameter(target, pname).unsafeCast<Int>() }")
         function(GlVoid, "glGetUniformfv", "program" to GlProgram, "location" to GlUniformLocation, "params" to GlFloatPtr, jsBody = "run { params.arrayFloat[0] = gl.getUniform(program.get(), location.get()).unsafeCast<Float>() }")
