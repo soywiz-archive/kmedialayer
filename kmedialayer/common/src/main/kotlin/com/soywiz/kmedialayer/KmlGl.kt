@@ -319,8 +319,8 @@ abstract class KmlGl {
     abstract fun blendEquationSeparate(modeRGB: Int, modeAlpha: Int): Unit
     abstract fun blendFunc(sfactor: Int, dfactor: Int): Unit
     abstract fun blendFuncSeparate(sfactorRGB: Int, dfactorRGB: Int, sfactorAlpha: Int, dfactorAlpha: Int): Unit
-    abstract fun bufferData(target: Int, size: Long, data: KmlBuffer, usage: Int): Unit
-    abstract fun bufferSubData(target: Int, offset: Long, size: Long, data: KmlBuffer): Unit
+    abstract fun bufferData(target: Int, size: Int, data: KmlBuffer, usage: Int): Unit
+    abstract fun bufferSubData(target: Int, offset: Int, size: Int, data: KmlBuffer): Unit
     abstract fun checkFramebufferStatus(target: Int): Int
     abstract fun clear(mask: Int): Unit
     abstract fun clearColor(red: Float, green: Float, blue: Float, alpha: Float): Unit
@@ -335,12 +335,12 @@ abstract class KmlGl {
     abstract fun createProgram(): Int
     abstract fun createShader(type: Int): Int
     abstract fun cullFace(mode: Int): Unit
-    abstract fun deleteBuffers(n: Int, buffers: KmlBuffer): Unit
-    abstract fun deleteFramebuffers(n: Int, framebuffers: KmlBuffer): Unit
+    abstract fun deleteBuffers(n: Int, items: KmlBuffer): Unit
+    abstract fun deleteFramebuffers(n: Int, items: KmlBuffer): Unit
     abstract fun deleteProgram(program: Int): Unit
-    abstract fun deleteRenderbuffers(n: Int, renderbuffers: KmlBuffer): Unit
+    abstract fun deleteRenderbuffers(n: Int, items: KmlBuffer): Unit
     abstract fun deleteShader(shader: Int): Unit
-    abstract fun deleteTextures(n: Int, textures: KmlBuffer): Unit
+    abstract fun deleteTextures(n: Int, items: KmlBuffer): Unit
     abstract fun depthFunc(func: Int): Unit
     abstract fun depthMask(flag: Boolean): Unit
     abstract fun depthRangef(n: Float, f: Float): Unit
@@ -348,7 +348,7 @@ abstract class KmlGl {
     abstract fun disable(cap: Int): Unit
     abstract fun disableVertexAttribArray(index: Int): Unit
     abstract fun drawArrays(mode: Int, first: Int, count: Int): Unit
-    abstract fun drawElements(mode: Int, count: Int, type: Int, indices: KmlBuffer): Unit
+    abstract fun drawElements(mode: Int, count: Int, type: Int, indices: Int): Unit
     abstract fun enable(cap: Int): Unit
     abstract fun enableVertexAttribArray(index: Int): Unit
     abstract fun finish(): Unit
@@ -447,6 +447,6 @@ abstract class KmlGl {
     abstract fun vertexAttrib3fv(index: Int, v: KmlBuffer): Unit
     abstract fun vertexAttrib4f(index: Int, x: Float, y: Float, z: Float, w: Float): Unit
     abstract fun vertexAttrib4fv(index: Int, v: KmlBuffer): Unit
-    abstract fun vertexAttribPointer(index: Int, size: Int, type: Int, normalized: Boolean, stride: Int, pointer: Long): Unit
+    abstract fun vertexAttribPointer(index: Int, size: Int, type: Int, normalized: Boolean, stride: Int, pointer: Int): Unit
     abstract fun viewport(x: Int, y: Int, width: Int, height: Int): Unit
 }
