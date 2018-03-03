@@ -71,7 +71,7 @@ class KmlGlVertexLayout(val program: KmlGlProgram) {
                 element.type,
                 element.normalized,
                 size,
-                element.pointer.toLong()
+                element.pointer
             )
         }
     }
@@ -116,7 +116,7 @@ class KmlGlBuffer(val gl: KmlGl, val type: Int, val bufs: KmlIntBuffer) {
 
     fun setData(data: KmlBuffer): KmlGlBuffer {
         bind()
-        gl.bufferData(type, data.baseBuffer.size.toLong(), data, gl.STATIC_DRAW)
+        gl.bufferData(type, data.baseBuffer.size, data, gl.STATIC_DRAW)
         return this
     }
 

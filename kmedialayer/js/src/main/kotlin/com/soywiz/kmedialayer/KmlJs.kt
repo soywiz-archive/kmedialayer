@@ -13,5 +13,13 @@ actual object Kml {
             document.appendChild(this)
         })) as HTMLCanvasElement
         val gl = KmlGlJsCanvas(canvas)
+
+        listener.init(gl)
+        fun frame(ms: Double) {
+            window.requestAnimationFrame(::frame)
+            listener.render(gl)
+        }
+
+        frame(0.0)
     }
 }

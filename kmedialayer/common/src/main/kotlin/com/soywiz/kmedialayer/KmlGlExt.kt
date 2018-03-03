@@ -9,7 +9,7 @@ fun KmlGl.getIntegerv(pname: Int): Int = KmlIntBuffer(1).apply { getIntegerv(pna
 private inline fun KmlGl.getInfoLog(
     obj: Int,
     getiv: (Int, Int) -> Int,
-    getInfoLog: (Int, Int, KmlBuffer?, KmlBuffer?) -> Unit
+    getInfoLog: (Int, Int, KmlBuffer, KmlBuffer) -> Unit
 ): String {
     val size = getiv(obj, INFO_LOG_LENGTH)
     val sizev = KmlIntBuffer(1)
