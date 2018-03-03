@@ -3,6 +3,7 @@ object KmlGenBuffer {
     fun main(args: Array<String>) {
         printToFile("kmedialayer/common/src/main/kotlin/com/soywiz/kmedialayer/KmlBuffer.kt") { generateCommon() }
         printToFile("kmedialayer/jvm/src/main/kotlin/com/soywiz/kmedialayer/KmlBufferJvm.kt") { generateJvm() }
+        printToFile("kmedialayer/js/src/main/kotlin/com/soywiz/kmedialayer/KmlBufferJs.kt") { generateJs() }
     }
 
     open class KmlType(val name: String, val size: Int) {
@@ -77,6 +78,33 @@ object KmlGenBuffer {
         }
         println("}")
         println("@Suppress(\"USELESS_CAST\") val KmlBuffer.nioBuffer: ByteBuffer get() = (baseBuffer as KmlBufferBase).nioBuffer")
+        println("")
+    }
+
+    fun Printer.generateJs() {
+        println("package com.soywiz.kmedialayer")
+        println("")
+        println("import org.khronos.webgl.*")
+        println("")
+        println("actual class KmlBufferBase private constructor(val arrayBuffer: ArrayBuffer) : KmlBuffer {")
+        println("   val arrayByte = Int8Array(arrayBuffer)")
+        println("   val arrayShort = Int16Array(arrayBuffer)")
+        println("   val arrayInt = Int32Array(arrayBuffer)")
+        println("   val arrayFloat = Float32Array(arrayBuffer)")
+        println("   actual override val baseBuffer: KmlBufferBase = this")
+        println("   actual val size: Int = arrayBuffer.byteLength")
+        println("   actual constructor(size: Int) : this(ArrayBuffer(size))")
+        println("")
+        for (type in types) {
+            println("    actual fun get${type.name}(index: Int): ${type.name} = array${type.name}[index]")
+            println("    actual fun set${type.name}(index: Int, value: ${type.name}): Unit = run { array${type.name}[index] = value }")
+        }
+        println("}")
+        println("@Suppress(\"USELESS_CAST\") val KmlBuffer.arrayBuffer: ArrayBuffer get() = (baseBuffer as KmlBufferBase).arrayBuffer")
+        println("@Suppress(\"USELESS_CAST\") val KmlBuffer.arrayByte: Int8Array get() = (baseBuffer as KmlBufferBase).arrayByte")
+        println("@Suppress(\"USELESS_CAST\") val KmlBuffer.arrayShort: Int16Array get() = (baseBuffer as KmlBufferBase).arrayShort")
+        println("@Suppress(\"USELESS_CAST\") val KmlBuffer.arrayInt: Int32Array get() = (baseBuffer as KmlBufferBase).arrayInt")
+        println("@Suppress(\"USELESS_CAST\") val KmlBuffer.arrayFloat: Float32Array get() = (baseBuffer as KmlBufferBase).arrayFloat")
         println("")
     }
 }

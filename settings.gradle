@@ -5,7 +5,7 @@ include(
 
 		'kmedialayer-common',
 		'kmedialayer',
-		//'kmedialayer-js',
+		'kmedialayer-js',
 		'kmedialayer-native',
 		//'kmedialayer-android',
 )
