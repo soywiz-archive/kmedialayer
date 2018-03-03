@@ -3,7 +3,20 @@ object OpenglGenerate {
 
     @JvmStatic
     fun main(args: Array<String>) {
-        println(OpenglDesc.functions.map { it.key })
+        generateCommon()
+        generateJvm()
+    }
+
+    fun generateCommon() {
+        for (func in OpenglDesc.functions.values) {
+            println("fun ${func.name}(${func.args.map { it.first + ": " + it.second.ktname }.joinToString(", ")}): ${func.rettype.ktname}")
+        }
+    }
+
+    fun generateJvm() {
+        for (func in OpenglDesc.functions.values) {
+            //println("")
+        }
     }
 
     object OpenglDesc {
@@ -20,19 +33,19 @@ object OpenglGenerate {
             functions[name] = Function(name, rettype, args.toList())
         }
 
-        interface GlType
-        object GlVoid : GlType
-        object GlInt : GlType
-        object GlFloat : GlType
-        object GlBool : GlType
-        object GlString : GlType
+        open class GlType(val ktname: String)
+        object GlVoid : GlType("Unit")
+        object GlInt : GlType("Int")
+        object GlFloat : GlType("Float")
+        object GlBool : GlType("Boolean")
+        object GlString : GlType("String")
 
-        object GlVoidPtr : GlType
-        object GlIntPtr : GlType
-        object GlCharPtr : GlType
-        object GlFloatPtr : GlType
-        object GlBoolPtr : GlType
-        object GlArrayString : GlType
+        object GlVoidPtr : GlType("GlVoidPtr")
+        object GlIntPtr : GlType("GlIntPtr")
+        object GlCharPtr : GlType("GlCharPtr")
+        object GlFloatPtr : GlType("GlFloatPtr")
+        object GlBoolPtr : GlType("GlBoolPtr")
+        object GlArrayString : GlType("Array<String>")
 
         fun functionV(name: String, vararg args: Pair<String, GlType>) = function(GlVoid, name, *args)
         fun functionI(name: String, vararg args: Pair<String, GlType>) = function(GlInt, name, *args)
