@@ -7,7 +7,7 @@ data class WindowConfig(
 )
 
 expect object Kml {
-    fun createWindow(config: WindowConfig, listener: KMLWindowListener)
+    fun application(windowConfig: WindowConfig, listener: KMLWindowListener)
 }
 
 open class KMLWindowListener {

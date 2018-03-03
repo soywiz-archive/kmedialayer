@@ -4,7 +4,7 @@ import com.soywiz.kmedialayer.*
 
 object KmedilayerSample {
     fun main(args: Array<String>) {
-        Kml.createWindow(
+        Kml.application(
             WindowConfig(
                 640,
                 480,

@@ -1,12 +1,14 @@
 package com.soywiz.kmedialayer
 
-import org.lwjgl.glfw.*
 import org.lwjgl.glfw.GLFW.*
-import org.lwjgl.opengl.GL.*
-import org.lwjgl.system.MemoryUtil.*
+import org.lwjgl.glfw.GLFWCursorPosCallback
+import org.lwjgl.glfw.GLFWKeyCallback
+import org.lwjgl.glfw.GLFWMouseButtonCallback
+import org.lwjgl.opengl.GL.createCapabilities
+import org.lwjgl.system.MemoryUtil.NULL
 
 actual object Kml {
-    actual fun createWindow(config: WindowConfig, listener: KMLWindowListener) {
+    actual fun application(windowConfig: WindowConfig, listener: KMLWindowListener) {
         // https://www.lwjgl.org/guide
 
         // Initialize GLFW. Most GLFW functions will not work before doing this.
@@ -17,7 +19,7 @@ actual object Kml {
         glfwDefaultWindowHints() // optional, the current window hints are already the default
         glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE) // the window will stay hidden after creation
         glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE) // the window will be resizable
-        val window = glfwCreateWindow(config.width, config.height, config.title, NULL, NULL)
+        val window = glfwCreateWindow(windowConfig.width, windowConfig.height, windowConfig.title, NULL, NULL)
         glfwMakeContextCurrent(window)
         // Enable v-sync
         glfwSwapInterval(1)
@@ -40,6 +42,19 @@ actual object Kml {
             listener.mouseUpdate(mouseX, mouseY, mouseButtons)
         }
 
+        glfwSetKeyCallback(window, object : GLFWKeyCallback() {
+            override fun invoke(
+                window: kotlin.Long,
+                key: kotlin.Int,
+                scancode: kotlin.Int,
+                action: kotlin.Int,
+                mods: kotlin.Int
+            ) {
+                if (action != GLFW_REPEAT) { // Ignore repeat events
+                    listener.keyUpdate(key, action != GLFW_RELEASE)
+                }
+            }
+        })
         glfwSetCursorPosCallback(window, object : GLFWCursorPosCallback() {
             override fun invoke(window: kotlin.Long, xpos: kotlin.Double, ypos: kotlin.Double) {
                 mouseX = xpos.toInt()
