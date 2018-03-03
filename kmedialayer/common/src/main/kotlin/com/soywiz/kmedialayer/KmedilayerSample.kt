@@ -5,7 +5,8 @@ object KmedilayerSample {
         Kml.createWindow(
             WindowConfig(
                 640,
-                480
+                480,
+                title = "KmedilayerSample"
             ), object : KMLWindowListener() {
                 override fun init(gl: KmlGl) = gl.run {
                     val program = createProgram()

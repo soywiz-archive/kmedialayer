@@ -65,6 +65,7 @@ object KmlBufferGenerate {
             println("    actual fun set${type.name}(index: Int, value: ${type.name}): Unit = run { nioBuffer.put${type.bbMethodName}(index * ${type.size}, value) }")
         }
         println("}")
+        println("@Suppress(\"USELESS_CAST\") val KmlWithBuffer.nioBuffer: ByteBuffer get() = (buffer as KmlBuffer).nioBuffer")
         println("")
     }
 }

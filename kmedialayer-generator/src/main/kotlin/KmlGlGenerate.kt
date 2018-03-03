@@ -44,12 +44,6 @@ object KmlGlGenerate {
         println("import org.lwjgl.opengl.GL41.*")
         println("import java.nio.*")
         println("")
-        println("fun GlVoidPtr.toBuffer(): ByteBuffer = TODO()")
-        println("fun GlIntPtr.toBuffer(): ByteBuffer = TODO()")
-        println("fun GlBoolPtr.toBuffer(): ByteBuffer = TODO()")
-        println("fun GlFloatPtr.toBuffer(): ByteBuffer = TODO()")
-        println("fun GlCharPtr.toBuffer(): ByteBuffer = TODO()")
-        println("")
         println("actual object KmlGl {")
         for (func in OpenglDesc.functions.values) {
             val call = "${func.name}(${func.args.joinToString(", ") { it.type.toJVM(it.name) }})"
@@ -89,16 +83,14 @@ object KmlGlGenerate {
         object GlString : GlType("String")
 
         open class GlTypePtr(ktname: String) : GlType(ktname) {
-            override fun toJVM(param: String): String = "$param.toBuffer()"
+            override fun toJVM(param: String): String = "$param.nioBuffer"
         }
 
-        object GlVoidPtr : GlTypePtr("GlVoidPtr")
-        object GlIntPtr : GlTypePtr("GlIntPtr")
-        object GlCharPtr : GlTypePtr("GlCharPtr")
-        object GlFloatPtr : GlTypePtr("GlFloatPtr")
-        object GlBoolPtr : GlTypePtr("GlBoolPtr")
-
-        object GlArrayString : GlType("Array<String>")
+        object GlVoidPtr : GlTypePtr("KmlWithBuffer")
+        object GlIntPtr : GlTypePtr("KmlWithBuffer")
+        object GlCharPtr : GlTypePtr("KmlWithBuffer")
+        object GlFloatPtr : GlTypePtr("KmlWithBuffer")
+        object GlBoolPtr : GlTypePtr("KmlWithBuffer")
 
         fun functionV(name: String, vararg args: Pair<String, GlType>) = function(GlVoid, name, *args)
         fun functionI(name: String, vararg args: Pair<String, GlType>) = function(GlInt, name, *args)

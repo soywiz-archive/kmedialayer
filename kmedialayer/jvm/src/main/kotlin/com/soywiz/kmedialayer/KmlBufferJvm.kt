@@ -16,3 +16,4 @@ actual class KmlBuffer private constructor(val nioBuffer: ByteBuffer) : KmlWithB
     actual fun getFloat(index: Int): Float = nioBuffer.getFloat(index * 4)
     actual fun setFloat(index: Int, value: Float): Unit = run { nioBuffer.putFloat(index * 4, value) }
 }
+@Suppress("USELESS_CAST") val KmlWithBuffer.nioBuffer: ByteBuffer get() = (buffer as KmlBuffer).nioBuffer
