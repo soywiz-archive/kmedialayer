@@ -55,11 +55,12 @@ class KmlGlVertexLayout(val program: KmlGlProgram) {
         return this
     }
 
-    fun int(name: String, count: Int, normalized: Boolean = false): KmlGlVertexLayout =
-        add(name, gl.INT, 4, count, normalized)
-
-    fun float(name: String, count: Int, normalized: Boolean = false): KmlGlVertexLayout =
-        add(name, gl.FLOAT, 4, count, normalized)
+    fun byte(name: String, count: Int, normalized: Boolean = false) = add(name, gl.BYTE, 1, count, normalized)
+    fun ubyte(name: String, count: Int, normalized: Boolean = false) = add(name, gl.UNSIGNED_BYTE, 1, count, normalized)
+    fun short(name: String, count: Int, normalized: Boolean = false) = add(name, gl.SHORT, 2, count, normalized)
+    fun ushort(name: String, count: Int, normalized: Boolean = false) = add(name, gl.UNSIGNED_SHORT, 2, count, normalized)
+    fun int(name: String, count: Int, normalized: Boolean = false) = add(name, gl.INT, 4, count, normalized)
+    fun float(name: String, count: Int, normalized: Boolean = false) = add(name, gl.FLOAT, 4, count, normalized)
 
     fun enable(): Unit = gl.run {
         for ((index, element) in elements.withIndex()) {
@@ -104,6 +105,15 @@ class KmlGlBuffer(val gl: KmlGl, val type: Int, val bufs: KmlIntBuffer) {
         gl.bindBuffer(type, 0)
     }
 
+    inline fun bind(callback: () -> Unit) {
+        bind()
+        try {
+            callback()
+        } finally {
+            unbind()
+        }
+    }
+
     fun setData(data: KmlBuffer): KmlGlBuffer {
         bind()
         gl.bufferData(type, data.baseBuffer.size.toLong(), data, gl.STATIC_DRAW)
@@ -123,3 +133,11 @@ fun KmlGl.createBuffer(type: Int): KmlGlBuffer {
 
 fun KmlGl.createArrayBuffer(): KmlGlBuffer = createBuffer(ARRAY_BUFFER)
 fun KmlGl.createElementArrayBuffer(): KmlGlBuffer = createBuffer(ELEMENT_ARRAY_BUFFER)
+
+fun KmlGl.drawArrays(layout: KmlGlVertexLayout, buffer: KmlGlBuffer, mode: Int, first: Int, count: Int) {
+    layout.use {
+        buffer.bind {
+            drawArrays(mode, first, count)
+        }
+    }
+}

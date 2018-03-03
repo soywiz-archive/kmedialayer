@@ -6,8 +6,8 @@ object KmedilayerSample {
     fun main(args: Array<String>) {
         Kml.application(
             WindowConfig(
-                640,
-                480,
+                width = 640,
+                height = 480,
                 title = "KmedilayerSample"
             ), object : KMLWindowListener() {
                 lateinit var program: KmlGlProgram
@@ -24,7 +24,7 @@ object KmedilayerSample {
                         """,
                         fragment = """
                             void main(void) {
-                                gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);
+                                gl_FragColor = vec4(0.8, 0.3, 0.4, 1.0);
                             }
                         """
                     )
@@ -44,10 +44,7 @@ object KmedilayerSample {
                     n++
                     clearColor(.5f, .55f, .6f, 1f)
                     clear(COLOR_BUFFER_BIT)
-                    layout.use {
-                        buffer.bind()
-                        drawArrays(TRIANGLES, 0, 3)
-                    }
+                    drawArrays(layout, buffer, TRIANGLES, 0, 3)
                 }
 
                 override fun keyUpdate(keyCode: Int, pressed: Boolean) {
