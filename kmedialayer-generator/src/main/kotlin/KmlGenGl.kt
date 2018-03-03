@@ -1,6 +1,6 @@
 import java.io.*
 
-object KmlGlGenerate {
+object KmlGenGl {
     @JvmStatic
     fun main(args: Array<String>) {
         printToFile("kmedialayer/common/src/main/kotlin/com/soywiz/kmedialayer/KmlGl.kt") { generateCommon() }
@@ -20,7 +20,7 @@ object KmlGlGenerate {
             println("const val ${const.name}: Int = ${"0x%04X".format(const.value)}")
         }
         println("")
-        println("expect object KmlGl {")
+        println("expect class KmlGl {")
         for (func in OpenglDesc.functions.values) {
             println("    fun ${func.unprefixedName}(${func.args.joinToString(", ") { it.name + ": " + it.type.ktname }}): ${func.rettype.ktname}")
         }
@@ -44,7 +44,7 @@ object KmlGlGenerate {
         println("import org.lwjgl.opengl.GL41.*")
         println("import java.nio.*")
         println("")
-        println("actual object KmlGl {")
+        println("actual class KmlGl {")
         for (func in OpenglDesc.functions.values) {
             val call = "${func.name}(${func.args.joinToString(", ") { it.type.toJVM(it.name) }})"
             println("    actual fun ${func.unprefixedName}(${func.args.joinToString(", ") { it.name + ": " + it.type.ktname }}): ${func.rettype.ktname} = $call")
@@ -83,14 +83,14 @@ object KmlGlGenerate {
         object GlString : GlType("String")
 
         open class GlTypePtr(ktname: String) : GlType(ktname) {
-            override fun toJVM(param: String): String = "$param.nioBuffer"
+            override fun toJVM(param: String): String = "$param?.nioBuffer"
         }
 
-        object GlVoidPtr : GlTypePtr("KmlWithBuffer")
-        object GlIntPtr : GlTypePtr("KmlWithBuffer")
-        object GlCharPtr : GlTypePtr("KmlWithBuffer")
-        object GlFloatPtr : GlTypePtr("KmlWithBuffer")
-        object GlBoolPtr : GlTypePtr("KmlWithBuffer")
+        object GlVoidPtr : GlTypePtr("KmlBuffer?")
+        object GlIntPtr : GlTypePtr("KmlBuffer?")
+        object GlCharPtr : GlTypePtr("KmlBuffer?")
+        object GlFloatPtr : GlTypePtr("KmlBuffer?")
+        object GlBoolPtr : GlTypePtr("KmlBuffer?")
 
         fun functionV(name: String, vararg args: Pair<String, GlType>) = function(GlVoid, name, *args)
         fun functionI(name: String, vararg args: Pair<String, GlType>) = function(GlInt, name, *args)
@@ -760,7 +760,8 @@ object KmlGlGenerate {
                 "type" to GlInt,
                 "normalized" to GlBool,
                 "stride" to GlInt,
-                "pointer" to GlVoidPtr
+                //"pointer" to GlVoidPtr
+                "pointer" to GlSize
             )
 
             functionV("glViewport", "x" to GlInt, "y" to GlInt, "width" to GlInt, "height" to GlInt)

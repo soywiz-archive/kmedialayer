@@ -2,8 +2,8 @@ package com.soywiz.kmedialayer
 
 import java.nio.*
 
-actual class KmlBuffer private constructor(val nioBuffer: ByteBuffer) : KmlWithBuffer {
-   actual override val buffer: KmlBuffer = this
+actual class KmlBufferBase private constructor(val nioBuffer: ByteBuffer) : KmlBuffer {
+   actual override val baseBuffer: KmlBufferBase = this
    actual val size: Int = nioBuffer.limit()
    actual constructor(size: Int) : this(ByteBuffer.allocateDirect(size).order(ByteOrder.nativeOrder()))
 
@@ -16,4 +16,4 @@ actual class KmlBuffer private constructor(val nioBuffer: ByteBuffer) : KmlWithB
     actual fun getFloat(index: Int): Float = nioBuffer.getFloat(index * 4)
     actual fun setFloat(index: Int, value: Float): Unit = run { nioBuffer.putFloat(index * 4, value) }
 }
-@Suppress("USELESS_CAST") val KmlWithBuffer.nioBuffer: ByteBuffer get() = (buffer as KmlBuffer).nioBuffer
+@Suppress("USELESS_CAST") val KmlBuffer.nioBuffer: ByteBuffer get() = (baseBuffer as KmlBufferBase).nioBuffer

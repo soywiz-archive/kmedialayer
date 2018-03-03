@@ -29,7 +29,8 @@ actual object Kml {
 
         glfwMakeContextCurrent(window)
 
-        listener.init(KmlGl)
+        val gl = KmlGl()
+        listener.init(gl)
 
         var mouseX = 0
         var mouseY = 0
@@ -61,7 +62,7 @@ actual object Kml {
         while (glfwWindowShouldClose(window) == 0) {
             glfwMakeContextCurrent(window)
 
-            listener.render(KmlGl)
+            listener.render(gl)
 
             glfwSwapBuffers(window) // swap the color buffers
 
