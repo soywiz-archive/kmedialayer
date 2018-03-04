@@ -2,6 +2,7 @@ object KmlGenBuffer {
     @JvmStatic
     fun main(args: Array<String>) {
         printToFile("kmedialayer/common/src/main/kotlin/com/soywiz/kmedialayer/KmlBuffer.kt") { generateCommon() }
+        printToFile("kmedialayer/android/src/main/kotlin/com/soywiz/kmedialayer/KmlBufferAndroid.kt") { generateJvm() }
         printToFile("kmedialayer/jvm/src/main/kotlin/com/soywiz/kmedialayer/KmlBufferJvm.kt") { generateJvm() }
         printToFile("kmedialayer/js/src/main/kotlin/com/soywiz/kmedialayer/KmlBufferJs.kt") { generateJs() }
     }
@@ -68,9 +69,13 @@ object KmlGenBuffer {
         println("import java.nio.*")
         println("")
         println("actual class KmlBufferBase private constructor(val nioBuffer: ByteBuffer) : KmlBuffer {")
-        println("   actual override val baseBuffer: KmlBufferBase = this")
-        println("   actual val size: Int = nioBuffer.limit()")
-        println("   actual constructor(size: Int) : this(ByteBuffer.allocateDirect(size).order(ByteOrder.nativeOrder()))")
+        println("    val byteBuffeer = nioBuffer")
+        println("    val shortBuffer = nioBuffer.asShortBuffer()")
+        println("    val intBuffer = nioBuffer.asIntBuffer()")
+        println("    val floatBuffer = nioBuffer.asFloatBuffer()")
+        println("    actual override val baseBuffer: KmlBufferBase = this")
+        println("    actual val size: Int = nioBuffer.limit()")
+        println("    actual constructor(size: Int) : this(ByteBuffer.allocateDirect(size).order(ByteOrder.nativeOrder()))")
         println("")
         for (type in types) {
             println("    actual fun get${type.name}(index: Int): ${type.name} = nioBuffer.get${type.bbMethodName}(index * ${type.size})")
@@ -78,6 +83,10 @@ object KmlGenBuffer {
         }
         println("}")
         println("@Suppress(\"USELESS_CAST\") val KmlBuffer.nioBuffer: ByteBuffer get() = (baseBuffer as KmlBufferBase).nioBuffer")
+        println("@Suppress(\"USELESS_CAST\") val KmlBuffer.nioByteBuffer: ByteBuffer get() = (baseBuffer as KmlBufferBase).nioBuffer")
+        println("@Suppress(\"USELESS_CAST\") val KmlBuffer.nioShortBuffer: ShortBuffer get() = (baseBuffer as KmlBufferBase).shortBuffer")
+        println("@Suppress(\"USELESS_CAST\") val KmlBuffer.nioIntBuffer: IntBuffer get() = (baseBuffer as KmlBufferBase).intBuffer")
+        println("@Suppress(\"USELESS_CAST\") val KmlBuffer.nioFloatBuffer: FloatBuffer get() = (baseBuffer as KmlBufferBase).floatBuffer")
         println("")
     }
 

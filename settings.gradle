@@ -7,7 +7,7 @@ include(
 		'kmedialayer',
 		'kmedialayer-js',
 		'kmedialayer-native',
-		//'kmedialayer-android',
+		'kmedialayer-android',
 )
 
 def register(String base) {
