@@ -178,7 +178,6 @@ class KmlGlTex(val gl: KmlGl, val texb: KmlIntBuffer) {
     var smooth: Boolean = true
     var clampToEdge: Boolean = true
 
-
     fun bind(unit: Int) = gl.run {
         activeTexture(TEXTURE0 + unit)
         bindTexture(TEXTURE_2D, tex)
@@ -218,7 +217,7 @@ class KmlGlTex(val gl: KmlGl, val texb: KmlIntBuffer) {
 fun KmlGl.createKmlTexture(): KmlGlTex {
     val buf = KmlIntBuffer(1)
     genTextures(1, buf)
-    return KmlGlTex(this, buf)
+    return KmlGlTex(this, buf).upload(1, 1, kmlByteBufferOf(0, 0, 0, 0))
 }
 
 fun KmlGl.uniformTex(location: Int, tex: KmlGlTex, unit: Int) {

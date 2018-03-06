@@ -1,5 +1,7 @@
 package com.soywiz.kmedialayer
 
+import kotlin.coroutines.experimental.*
+
 data class WindowConfig(
     val width: Int = 640,
     val height: Int = 480,
@@ -9,6 +11,20 @@ data class WindowConfig(
 abstract class KmlBase {
     open fun application(windowConfig: WindowConfig, listener: KMLWindowListener) {
         TODO("KmlBase.application()")
+    }
+
+    open fun launch(context: CoroutineContext = EmptyCoroutineContext, callback: suspend () -> Unit) {
+        callback.startCoroutine(object : Continuation<Unit> {
+            override val context: CoroutineContext = context
+            override fun resume(value: Unit) = Unit
+            override fun resumeWithException(exception: Throwable) {
+                println(exception)
+            }
+        })
+    }
+
+    open suspend fun delay(ms: Int): Unit {
+        TODO("KmlBase.delay()")
     }
 
     open suspend fun decodeImage(path: String): KmlNativeImageData {

@@ -3,13 +3,13 @@ package com.soywiz.kmedialayer.sample
 import com.soywiz.kmedialayer.*
 import com.soywiz.kmedialayer.util.*
 
-object KmedilayerSample {
+object KMediaLayerSample {
     fun main(args: Array<String>) {
         Kml.application(
             WindowConfig(
                 width = 640,
                 height = 480,
-                title = "KmedilayerSample"
+                title = "KMediaLayerSample"
             ), object : KMLWindowListener() {
                 lateinit var program: KmlGlProgram
                 lateinit var layout: KmlGlVertexLayout
@@ -48,13 +48,18 @@ object KmedilayerSample {
                     vertexBuffer = createArrayBuffer()
                     indexBuffer = createElementArrayBuffer()
 
-                    val miniPNG =
-                        unhex("89504E470D0A1A0A0000000D494844520000002000000020080300000044A48AC600000006504C5445FFFFFF243B601B86B322000000414944415478DADDD2310A00200C0441F7FF9F160463E51D9888E03682994AD38A6324E792B03A0373B215717F19A8C80B3E1206BCFF4D0F8833BDD546D8872EAD03B22200D3EE8E10050000000049454E44AE426082")
-                    println("Decoding image...")
-                    val miniImage = Kml.decodeImage(miniPNG)
-                    println(miniImage)
+                    tex = createKmlTexture()
 
-                    tex = createKmlTexture().upload(miniImage).apply { smooth = false }
+                    //Kml.launch {
+                        //Kml.delay(1000)
+                        val miniPNG =
+                            unhex("89504E470D0A1A0A0000000D494844520000002000000020080300000044A48AC600000006504C5445FFFFFF243B601B86B322000000414944415478DADDD2310A00200C0441F7FF9F160463E51D9888E03682994AD38A6324E792B03A0373B215717F19A8C80B3E1206BCFF4D0F8833BDD546D8872EAD03B22200D3EE8E10050000000049454E44AE426082")
+                        println("Decoding image...")
+                        val miniImage = Kml.decodeImage(miniPNG)
+                        tex.upload(miniImage).apply { smooth = false }
+                        println(miniImage)
+                    //}
+
                     println("Created texture")
                     //tex = createKmlTexture().upload(2, 2, intArrayOf(0xFF0000FF.toInt(), 0xFFFF00FF.toInt(), 0xFF0000FF.toInt(), 0xFFFF00FF.toInt()).toIntBuffer())
                 }
@@ -80,6 +85,9 @@ object KmedilayerSample {
                     n++
                     clearColor(.5f, .55f, .6f, 1f)
                     clear(COLOR_BUFFER_BIT)
+
+                    enable(BLEND)
+                    blendFunc(SRC_ALPHA, ONE_MINUS_SRC_ALPHA)
 
                     //println(ortho)
                     //layout.drawArrays(vertexBuffer, TRIANGLE_STRIP, 0, 4) {

@@ -1,5 +1,5 @@
 package com.soywiz.kmedialayer
 
-import com.soywiz.kmedialayer.sample.KmedilayerSample
+import com.soywiz.kmedialayer.sample.KMediaLayerSample
 
-fun main(args: Array<String>) = KmedilayerSample.main(args)
+fun main(args: Array<String>) = KMediaLayerSample.main(args)

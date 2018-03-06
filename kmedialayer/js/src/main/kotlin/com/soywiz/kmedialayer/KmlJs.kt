@@ -101,6 +101,10 @@ actual val Kml: KmlBase = object : KmlBase() {
             URL.revokeObjectURL(url)
         }
     }
+
+    override suspend fun delay(ms: Int): Unit = suspendCoroutine { c ->
+        window.setTimeout({ c.resume(Unit) }, ms)
+    }
 }
 
 class KmlImgNativeImageData(val img: HTMLImageElement) : KmlNativeImageData {

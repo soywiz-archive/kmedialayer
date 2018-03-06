@@ -11,38 +11,14 @@ import java.nio.*
 import javax.imageio.*
 import kotlin.coroutines.experimental.*
 
-
-private fun <T : Any> runBlocking(context: CoroutineContext = EmptyCoroutineContext, callback: suspend () -> T): T {
-    var done = false
-    lateinit var resultValue: T
-    var resultException: Throwable? = null
-    callback.startCoroutine(object : Continuation<T> {
-        override val context: CoroutineContext = context
-        override fun resume(value: T) {
-            resultValue = value
-            done = true
-        }
-
-        override fun resumeWithException(exception: Throwable) {
-            exception.printStackTrace()
-            resultException = exception
-            done = true
-        }
-    })
-    while (!done) {
-        Thread.sleep(1L)
-    }
-    if (resultException != null) throw resultException!!
-    return resultValue
-}
-
-actual val Kml = object : KmlBase() {
+object KmlBaseJvm : KmlBase() {
     lateinit var keyCallback: GLFWKeyCallback
     lateinit var cursorPosCallback: GLFWCursorPosCallback
     lateinit var mouseButtonCallback: GLFWMouseButtonCallback
     lateinit var frameBufferSize: GLFWFramebufferSizeCallback
+    var window: Long = 0L
 
-    override fun application(windowConfig: WindowConfig, listener: KMLWindowListener) = runBlocking {
+    override fun application(windowConfig: WindowConfig, listener: KMLWindowListener) {
         System.setProperty("java.awt.headless", "true")
         // https://www.lwjgl.org/guide
 
@@ -53,7 +29,7 @@ actual val Kml = object : KmlBase() {
         glfwDefaultWindowHints() // optional, the current window hints are already the default
         glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE) // the window will stay hidden after creation
         glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE) // the window will be resizable
-        val window = glfwCreateWindow(windowConfig.width, windowConfig.height, windowConfig.title, NULL, NULL)
+        window = glfwCreateWindow(windowConfig.width, windowConfig.height, windowConfig.title, NULL, NULL)
         glfwMakeContextCurrent(window)
         // Enable v-sync
         glfwSwapInterval(1)
@@ -66,7 +42,9 @@ actual val Kml = object : KmlBase() {
         glfwMakeContextCurrent(window)
 
         val gl = JvmKmlGl()
-        listener.init(gl)
+        runBlocking {
+            listener.init(gl)
+        }
 
         var mouseX = 0
         var mouseY = 0
@@ -110,6 +88,7 @@ actual val Kml = object : KmlBase() {
             }
         }
         glfwSetFramebufferSizeCallback(window, frameBufferSize)
+        //glfwSetWindowIcon()
 
         mouseButtonCallback = object : GLFWMouseButtonCallback() {
             override fun invoke(window: kotlin.Long, button: kotlin.Int, action: kotlin.Int, mods: kotlin.Int) {
@@ -132,6 +111,8 @@ actual val Kml = object : KmlBase() {
             // Poll for window events. The key callback above will only be
             // invoked during this call.
             glfwPollEvents()
+
+            Timers.check()
         }
     }
 
@@ -149,6 +130,68 @@ actual val Kml = object : KmlBase() {
         }
         return BufferedImageKmlNativeImageData(out)
     }
+
+    override suspend fun delay(ms: Int): Unit = suspendCoroutine { c ->
+        Timers.add(ms) { c.resume(Unit) }
+    }
+}
+
+actual val Kml: KmlBase = KmlBaseJvm
+
+
+object Timers {
+    private class Timer(val start: Long, val callback: () -> Unit)
+
+    private val tempTimers = arrayListOf<Timer>()
+    private val timers = arrayListOf<Timer>()
+
+    fun add(ms: Int, callback: () -> Unit) {
+        timers += Timer(System.currentTimeMillis() + ms, callback)
+    }
+
+    fun check() {
+        // Timer events
+        val now = System.currentTimeMillis()
+        tempTimers.clear()
+        tempTimers.addAll(timers)
+        for (timer in tempTimers) {
+            if (now >= timer.start) {
+                timer.callback()
+                timers.remove(timer)
+            }
+        }
+    }
+}
+
+private fun <T : Any> runBlocking(context: CoroutineContext = EmptyCoroutineContext, callback: suspend () -> T): T {
+    var done = false
+    lateinit var resultValue: T
+    var resultException: Throwable? = null
+    callback.startCoroutine(object : Continuation<T> {
+        override val context: CoroutineContext = context
+        override fun resume(value: T) {
+            resultValue = value
+            done = true
+        }
+
+        override fun resumeWithException(exception: Throwable) {
+            exception.printStackTrace()
+            resultException = exception
+            done = true
+        }
+    })
+    while (!done) {
+        Thread.sleep(1L)
+        //Timers.check()
+        glfwPollEvents()
+        Timers.check()
+        if (glfwWindowShouldClose(KmlBaseJvm.window) != 0) {
+            System.exit(0)
+        }
+
+    }
+    if (resultException != null) throw resultException!!
+    return resultValue
 }
 
 class BufferedImageKmlNativeImageData(val buffered: BufferedImage) : KmlNativeImageData {
