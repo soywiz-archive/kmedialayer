@@ -39,6 +39,9 @@ open class KMLWindowListener {
 
     open fun mouseUpdate(x: Int, y: Int, buttons: Int) {
     }
+
+    open fun resized(width: Int, height: Int) {
+    }
 }
 
 interface KmlNativeImageData {

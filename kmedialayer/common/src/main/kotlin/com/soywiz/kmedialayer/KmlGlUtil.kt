@@ -1,6 +1,5 @@
 package com.soywiz.kmedialayer
 
-
 class KmlGlProgram(val gl: KmlGl, val program: Int, val vertex: Int, val fragment: Int) {
     fun use() = gl.useProgram(program)
     fun unuse() = gl.useProgram(0)
@@ -59,7 +58,9 @@ class KmlGlVertexLayout(val program: KmlGlProgram) {
     fun byte(name: String, count: Int, normalized: Boolean = false) = add(name, gl.BYTE, 1, count, normalized)
     fun ubyte(name: String, count: Int, normalized: Boolean = false) = add(name, gl.UNSIGNED_BYTE, 1, count, normalized)
     fun short(name: String, count: Int, normalized: Boolean = false) = add(name, gl.SHORT, 2, count, normalized)
-    fun ushort(name: String, count: Int, normalized: Boolean = false) = add(name, gl.UNSIGNED_SHORT, 2, count, normalized)
+    fun ushort(name: String, count: Int, normalized: Boolean = false) =
+        add(name, gl.UNSIGNED_SHORT, 2, count, normalized)
+
     fun int(name: String, count: Int, normalized: Boolean = false) = add(name, gl.INT, 4, count, normalized)
     fun float(name: String, count: Int, normalized: Boolean = false) = add(name, gl.FLOAT, 4, count, normalized)
 
@@ -135,7 +136,13 @@ fun KmlGl.createBuffer(type: Int): KmlGlBuffer {
 fun KmlGl.createArrayBuffer(): KmlGlBuffer = createBuffer(ARRAY_BUFFER)
 fun KmlGl.createElementArrayBuffer(): KmlGlBuffer = createBuffer(ELEMENT_ARRAY_BUFFER)
 
-inline fun KmlGlVertexLayout.drawArrays(buffer: KmlGlBuffer, mode: Int, first: Int, count: Int, uniforms: () -> Unit = {}) {
+inline fun KmlGlVertexLayout.drawArrays(
+    buffer: KmlGlBuffer,
+    mode: Int,
+    first: Int,
+    count: Int,
+    uniforms: () -> Unit = {}
+) {
     this.use {
         buffer.bind {
             uniforms()
@@ -156,7 +163,13 @@ class KmlGlTex(val gl: KmlGl, val texb: KmlIntBuffer) {
         texParameteri(TEXTURE_2D, TEXTURE_WRAP_T, CLAMP_TO_EDGE)
     }
 
-    fun upload(width: Int, height: Int, data: KmlBuffer, format: Int = gl.RGBA, type: Int = gl.UNSIGNED_BYTE): KmlGlTex {
+    fun upload(
+        width: Int,
+        height: Int,
+        data: KmlBuffer,
+        format: Int = gl.RGBA,
+        type: Int = gl.UNSIGNED_BYTE
+    ): KmlGlTex {
         bind(0)
         gl.texImage2D(gl.TEXTURE_2D, 0, format, width, height, 0, format, type, data)
         return this
@@ -177,4 +190,45 @@ fun KmlGl.createKmlTexture(): KmlGlTex {
     val buf = KmlIntBuffer(1)
     genTextures(1, buf)
     return KmlGlTex(this, buf)
+}
+
+object KmlGlUtil {
+    fun ortho(
+        width: Int,
+        height: Int,
+        near: Float = 0f,
+        far: Float = 1f,
+        out: KmlFloatBuffer = KmlFloatBuffer(16)
+    ): KmlFloatBuffer {
+        return ortho(height.toFloat(), 0f, 0f, width.toFloat(), near, far, out)
+    }
+
+    fun ortho(
+        bottom: Float, top: Float, left: Float, right: Float,
+        near: Float, far: Float,
+        M: KmlFloatBuffer = KmlFloatBuffer(16)
+    ): KmlFloatBuffer {
+        // set OpenGL perspective projection matrix
+        M[0] = 2 / (right - left)
+        M[1] = 0f
+        M[2] = 0f
+        M[3] = 0f
+
+        M[4] = 0f
+        M[5] = 2 / (top - bottom)
+        M[6] = 0f
+        M[7] = 0f
+
+        M[8] = 0f
+        M[9] = 0f
+        M[10] = -2 / (far - near)
+        M[11] = 0f
+
+        M[12] = -(right + left) / (right - left)
+        M[13] = -(top + bottom) / (top - bottom)
+        M[14] = -(far + near) / (far - near)
+        M[15] = 1f
+        return M
+    }
+
 }

@@ -40,6 +40,7 @@ actual val Kml = object : KmlBase() {
     lateinit var keyCallback: GLFWKeyCallback
     lateinit var cursorPosCallback: GLFWCursorPosCallback
     lateinit var mouseButtonCallback: GLFWMouseButtonCallback
+    lateinit var frameBufferSize: GLFWFramebufferSizeCallback
 
     override fun application(windowConfig: WindowConfig, listener: KMLWindowListener) = runBlocking {
         System.setProperty("java.awt.headless", "true")
@@ -99,6 +100,17 @@ actual val Kml = object : KmlBase() {
         }
         glfwSetCursorPosCallback(window, cursorPosCallback)
 
+        frameBufferSize = object : GLFWFramebufferSizeCallback() {
+            override fun invoke(window: kotlin.Long, width: kotlin.Int, height: kotlin.Int) {
+                glfwMakeContextCurrent(window)
+                gl.viewport(0, 0, width, height)
+                listener.resized(width, height)
+                listener.render(gl)
+                glfwSwapBuffers(window) // swap the color buffers
+            }
+        }
+        glfwSetFramebufferSizeCallback(window, frameBufferSize)
+
         mouseButtonCallback = object : GLFWMouseButtonCallback() {
             override fun invoke(window: kotlin.Long, button: kotlin.Int, action: kotlin.Int, mods: kotlin.Int) {
                 if (action == GLFW_PRESS) {
@@ -113,7 +125,6 @@ actual val Kml = object : KmlBase() {
 
         while (glfwWindowShouldClose(window) == 0) {
             glfwMakeContextCurrent(window)
-
             listener.render(gl)
 
             glfwSwapBuffers(window) // swap the color buffers

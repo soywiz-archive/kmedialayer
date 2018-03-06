@@ -19,12 +19,13 @@ fun launch(context: CoroutineContext = EmptyCoroutineContext, callback: suspend 
 actual val Kml: KmlBase = object : KmlBase() {
     override fun application(windowConfig: WindowConfig, listener: KMLWindowListener) = launch {
         document.title = windowConfig.title
+        var mustAppendCanvas = false
         val canvas =
             (document.getElementById("kml-canvas") ?: ((document.createElement("canvas") as HTMLCanvasElement).apply {
                 id = "kml-canvas"
-                width = windowConfig.width
-                height = windowConfig.height
-                document.body!!.appendChild(this)
+                document.body?.style?.padding = "0"
+                document.body?.style?.margin = "0"
+                mustAppendCanvas = true
             })) as HTMLCanvasElement
 
         var mouseX = 0
@@ -54,6 +55,25 @@ actual val Kml: KmlBase = object : KmlBase() {
         val gl = KmlGlJsCanvas(canvas)
 
         listener.init(gl)
+
+        if (mustAppendCanvas) {
+            fun resize() {
+                val width = window.innerWidth
+                val height = window.innerHeight
+                canvas.width = width
+                canvas.height = height
+                canvas.style.width = "${width}px"
+                canvas.style.height = "${height}px"
+                gl.viewport(0, 0, width, height)
+                listener.resized(width, height)
+            }
+            window.onresize = {
+                resize()
+            }
+            resize()
+            document.body?.appendChild(canvas)
+        }
+
         fun frame(ms: Double) {
             window.requestAnimationFrame(::frame)
             listener.render(gl)

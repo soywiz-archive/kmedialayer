@@ -15,15 +15,17 @@ object KmedilayerSample {
                 lateinit var layout: KmlGlVertexLayout
                 lateinit var buffer: KmlGlBuffer
                 lateinit var tex: KmlGlTex
+                val ortho = KmlGlUtil.ortho(640, 480)
 
                 override suspend fun init(gl: KmlGl) = gl.run {
                     program = createProgram(
                         vertex = """
+                            uniform mat4 uprojection;
                             attribute vec2 aPos;
                             attribute vec2 aTex;
                             varying vec2 vTex;
                             void main() {
-                                gl_Position = vec4(aPos, 0.0, 1.0);
+                                gl_Position = uprojection * vec4(aPos, 0.0, 1.0);
                                 vTex = aTex;
                             }
                         """,
@@ -60,9 +62,9 @@ object KmedilayerSample {
                         KmlFloatBuffer(
                             floatArrayOf(
                                 0f, 0f, 0f, 0f,
-                                1f, 0f, 1f, 0f,
-                                0f, 1f, 0f, 1f,
-                                1f, 1f, 1f, 1f
+                                32f, 0f, 1f, 0f,
+                                0f, 32f, 0f, 1f,
+                                32f, 32f, 1f, 1f
                             )
                         )
                     )
@@ -70,10 +72,17 @@ object KmedilayerSample {
                     clearColor(.5f, .55f, .6f, 1f)
                     clear(COLOR_BUFFER_BIT)
 
+                    //println(ortho)
                     layout.drawArrays(buffer, TRIANGLE_STRIP, 0, 4) {
                         tex.bind(0)
                         gl.uniform1i(program.getUniformLocation("utex"), 0)
+                        gl.uniformMatrix4fv(program.getUniformLocation("uprojection"), 1, false, ortho)
                     }
+                }
+
+                override fun resized(width: Int, height: Int) {
+                    KmlGlUtil.ortho(width, height, out = ortho)
+                    println("Resized: $width, $height")
                 }
 
                 override fun keyUpdate(keyCode: Int, pressed: Boolean) {
@@ -81,11 +90,11 @@ object KmedilayerSample {
                 }
 
                 override fun gamepadUpdate(button: Int, pressed: Boolean, ratio: Double) {
-                    println("gamepadUpdate($button, $pressed, $ratio)")
+                    //println("gamepadUpdate($button, $pressed, $ratio)")
                 }
 
                 override fun mouseUpdate(x: Int, y: Int, buttons: Int) {
-                    println("mouseUpdate($x, $y, $buttons)")
+                    //println("mouseUpdate($x, $y, $buttons)")
                 }
             }
         )
