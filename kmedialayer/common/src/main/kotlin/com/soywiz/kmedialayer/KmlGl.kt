@@ -371,9 +371,9 @@ abstract class KmlGl {
     abstract fun getFloatv(pname: Int, data: KmlBuffer): Unit
     abstract fun getFramebufferAttachmentParameteriv(target: Int, attachment: Int, pname: Int, params: KmlBuffer): Unit
     abstract fun getIntegerv(pname: Int, data: KmlBuffer): Unit
-    abstract fun getProgramiv(program: Int, pname: Int, params: KmlBuffer): Unit
     abstract fun getProgramInfoLog(program: Int, bufSize: Int, length: KmlBuffer, infoLog: KmlBuffer): Unit
     abstract fun getRenderbufferParameteriv(target: Int, pname: Int, params: KmlBuffer): Unit
+    abstract fun getProgramiv(program: Int, pname: Int, params: KmlBuffer): Unit
     abstract fun getShaderiv(shader: Int, pname: Int, params: KmlBuffer): Unit
     abstract fun getShaderInfoLog(shader: Int, bufSize: Int, length: KmlBuffer, infoLog: KmlBuffer): Unit
     abstract fun getShaderPrecisionFormat(shadertype: Int, precisiontype: Int, range: KmlBuffer, precision: KmlBuffer): Unit

@@ -164,7 +164,7 @@ object OpenglDesc {
     }
 
     object GlVoidPtr : GlTypePtr("KmlBuffer") {
-        override fun toJSParam(param: String): String = "$param.arrayByte"
+        override fun toJSParam(param: String): String = "$param.arrayUByte"
     }
     object GlIntPtr : GlTypePtr("KmlBuffer") {
         override fun toAndroid(param: String): String = "$param.nioIntBuffer"
@@ -483,7 +483,7 @@ object OpenglDesc {
         fun jsBodyDelete(delete: String, items: String = "items"): String = "run { for (p in 0 until n) gl.$delete($items.arrayInt[p].free()) }"
         fun jsBodyCreate(create: String, items: String = "items"): String = "run { for (p in 0 until n) $items.arrayInt[p] = gl.$create().alloc() }"
 
-        function(GlVoid, "glActiveTexture", "texture" to GlTexture)
+        function(GlVoid, "glActiveTexture", "texture" to GlInt)
         function(GlVoid, "glAttachShader", "program" to GlProgram, "shader" to GlShader)
         function(GlVoid, "glBindAttribLocation", "program" to GlProgram, "index" to GlInt, "name" to GlString)
         function(GlVoid, "glBindBuffer", "target" to GlInt, "buffer" to GlBuffer)
@@ -682,7 +682,6 @@ object OpenglDesc {
             jsBody = "run { params.arrayInt[0] = gl.getFramebufferAttachmentParameter(target, attachment, pname).unsafeCast<Int>() }"
         )
         function(GlVoid, "glGetIntegerv", "pname" to GlInt, "data" to GlIntPtr, jsBody = getBase("Int"))
-        function(GlVoid, "glGetProgramiv", "program" to GlProgram, "pname" to GlInt, "params" to GlIntPtr, jsBody = "run { params.arrayInt[0] = gl.getProgramParameter(program.get(), pname).unsafeCast<Int>() }")
         function(
             GlVoid,
             "glGetProgramInfoLog",
@@ -694,7 +693,25 @@ object OpenglDesc {
             androidBody = "run { infoLog.putAsciiString(glGetProgramInfoLog(program)) }"
         )
         function(GlVoid, "glGetRenderbufferParameteriv", "target" to GlInt, "pname" to GlInt, "params" to GlIntPtr, jsBody = "run { params.arrayInt[0] = gl.getRenderbufferParameter(target, pname).unsafeCast<Int>() }")
-        function(GlVoid, "glGetShaderiv", "shader" to GlShader, "pname" to GlInt, "params" to GlIntPtr, jsBody = "run { params.arrayInt[0] = gl.getShaderParameter(shader.get(), pname).unsafeCast<Int>() }")
+        function(GlVoid, "glGetProgramiv", "program" to GlProgram, "pname" to GlInt, "params" to GlIntPtr,
+            jsBody = """run {
+                when (pname) {
+                    INFO_LOG_LENGTH -> params.arrayInt[0] = gl.getProgramInfoLog(program.get())?.length?.plus(1) ?: 1
+                    else -> params.arrayInt[0] = gl.getProgramParameter(program.get(), pname).unsafeCast<Int>()
+                }
+            }""".trimIndent()
+        )
+        function(GlVoid, "glGetShaderiv", "shader" to GlShader, "pname" to GlInt, "params" to GlIntPtr,
+            jsBody = """run {
+                when (pname) {
+                    INFO_LOG_LENGTH -> params.arrayInt[0] = gl.getShaderInfoLog(shader.get())?.length?.plus(1) ?: 1
+                    else -> params.arrayInt[0] = gl.getShaderParameter(shader.get(), pname).unsafeCast<Int>()
+                }
+            }""".trimIndent()
+        )
+
+
+
         function(
             GlVoid,
             "glGetShaderInfoLog",
@@ -783,10 +800,11 @@ object OpenglDesc {
             GlVoid,
             "glShaderSource",
             "shader" to GlShader,
-            "string" to GlString
+            "string" to GlString,
             //"count" to GlInt,
             //"string" to GlArrayString,
-            //"length" to GlIntPtr
+            //"length" to GlIntPtr,
+            jsBody = "run { gl.shaderSource(shader.get(), \"#ifdef GL_ES\\nprecision mediump float;\\n#endif\\n\$string\") }"
         )
         function(GlVoid, "glStencilFunc", "func" to GlInt, "ref" to GlInt, "mask" to GlInt)
         function(GlVoid, "glStencilFuncSeparate", "face" to GlInt, "func" to GlInt, "ref" to GlInt, "mask" to GlInt)

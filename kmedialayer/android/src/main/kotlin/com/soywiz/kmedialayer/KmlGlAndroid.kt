@@ -71,9 +71,9 @@ class KmlGlAndroid : KmlGl() {
     override fun getFloatv(pname: Int, data: KmlBuffer): Unit = glGetFloatv(pname, data.nioFloatBuffer)
     override fun getFramebufferAttachmentParameteriv(target: Int, attachment: Int, pname: Int, params: KmlBuffer): Unit = glGetFramebufferAttachmentParameteriv(target, attachment, pname, params.nioIntBuffer)
     override fun getIntegerv(pname: Int, data: KmlBuffer): Unit = glGetIntegerv(pname, data.nioIntBuffer)
-    override fun getProgramiv(program: Int, pname: Int, params: KmlBuffer): Unit = glGetProgramiv(program, pname, params.nioIntBuffer)
     override fun getProgramInfoLog(program: Int, bufSize: Int, length: KmlBuffer, infoLog: KmlBuffer): Unit = run { infoLog.putAsciiString(glGetProgramInfoLog(program)) }
     override fun getRenderbufferParameteriv(target: Int, pname: Int, params: KmlBuffer): Unit = glGetRenderbufferParameteriv(target, pname, params.nioIntBuffer)
+    override fun getProgramiv(program: Int, pname: Int, params: KmlBuffer): Unit = glGetProgramiv(program, pname, params.nioIntBuffer)
     override fun getShaderiv(shader: Int, pname: Int, params: KmlBuffer): Unit = glGetShaderiv(shader, pname, params.nioIntBuffer)
     override fun getShaderInfoLog(shader: Int, bufSize: Int, length: KmlBuffer, infoLog: KmlBuffer): Unit = run { infoLog.putAsciiString(glGetShaderInfoLog(shader)) }
     override fun getShaderPrecisionFormat(shadertype: Int, precisiontype: Int, range: KmlBuffer, precision: KmlBuffer): Unit = glGetShaderPrecisionFormat(shadertype, precisiontype, range.nioIntBuffer, precision.nioIntBuffer)

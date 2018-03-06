@@ -16,7 +16,7 @@ class KmlGlJsCanvas(val canvas: HTMLCanvasElement) : KmlGl() {
     private fun <T> Int.get(): T = items[this].unsafeCast<T>()
     private fun <T> Int.free(): T = run { val out = items[this].unsafeCast<T>(); freeList += this; items[this] = null; out }
 
-    override fun activeTexture(texture: Int): Unit = gl.activeTexture(texture.get())
+    override fun activeTexture(texture: Int): Unit = gl.activeTexture(texture)
     override fun attachShader(program: Int, shader: Int): Unit = gl.attachShader(program.get(), shader.get())
     override fun bindAttribLocation(program: Int, index: Int, name: String): Unit = gl.bindAttribLocation(program.get(), index, name)
     override fun bindBuffer(target: Int, buffer: Int): Unit = gl.bindBuffer(target, buffer.get())
@@ -80,10 +80,20 @@ class KmlGlJsCanvas(val canvas: HTMLCanvasElement) : KmlGl() {
     override fun getFloatv(pname: Int, data: KmlBuffer): Unit = run { data.arrayFloat[0] = gl.getParameter(pname).unsafeCast<Float>() }
     override fun getFramebufferAttachmentParameteriv(target: Int, attachment: Int, pname: Int, params: KmlBuffer): Unit = run { params.arrayInt[0] = gl.getFramebufferAttachmentParameter(target, attachment, pname).unsafeCast<Int>() }
     override fun getIntegerv(pname: Int, data: KmlBuffer): Unit = run { data.arrayInt[0] = gl.getParameter(pname).unsafeCast<Int>() }
-    override fun getProgramiv(program: Int, pname: Int, params: KmlBuffer): Unit = run { params.arrayInt[0] = gl.getProgramParameter(program.get(), pname).unsafeCast<Int>() }
     override fun getProgramInfoLog(program: Int, bufSize: Int, length: KmlBuffer, infoLog: KmlBuffer): Unit = run { val str = gl.getProgramInfoLog(program.get()) ?: ""; length.arrayInt[0] = str.length; infoLog.putAsciiString(str) }
     override fun getRenderbufferParameteriv(target: Int, pname: Int, params: KmlBuffer): Unit = run { params.arrayInt[0] = gl.getRenderbufferParameter(target, pname).unsafeCast<Int>() }
-    override fun getShaderiv(shader: Int, pname: Int, params: KmlBuffer): Unit = run { params.arrayInt[0] = gl.getShaderParameter(shader.get(), pname).unsafeCast<Int>() }
+    override fun getProgramiv(program: Int, pname: Int, params: KmlBuffer): Unit = run {
+                when (pname) {
+                    INFO_LOG_LENGTH -> params.arrayInt[0] = gl.getProgramInfoLog(program.get())?.length?.plus(1) ?: 1
+                    else -> params.arrayInt[0] = gl.getProgramParameter(program.get(), pname).unsafeCast<Int>()
+                }
+            }
+    override fun getShaderiv(shader: Int, pname: Int, params: KmlBuffer): Unit = run {
+                when (pname) {
+                    INFO_LOG_LENGTH -> params.arrayInt[0] = gl.getShaderInfoLog(shader.get())?.length?.plus(1) ?: 1
+                    else -> params.arrayInt[0] = gl.getShaderParameter(shader.get(), pname).unsafeCast<Int>()
+                }
+            }
     override fun getShaderInfoLog(shader: Int, bufSize: Int, length: KmlBuffer, infoLog: KmlBuffer): Unit = run { val str = gl.getShaderInfoLog(shader.get()) ?: ""; length.arrayInt[0] = str.length; infoLog.putAsciiString(str) }
     override fun getShaderPrecisionFormat(shadertype: Int, precisiontype: Int, range: KmlBuffer, precision: KmlBuffer): Unit = run { val info = gl.getShaderPrecisionFormat(shadertype, precisiontype); if (info != null) { range.arrayInt[0] = info.rangeMin; range.arrayInt[1] = info.rangeMax; precision.arrayInt[0] = info.precision } }
     override fun getShaderSource(shader: Int, bufSize: Int, length: KmlBuffer, source: KmlBuffer): Unit = run { val str = gl.getShaderSource(shader.get()) ?: ""; length.arrayInt[0] = str.length; source.putAsciiString(str) }
@@ -108,25 +118,25 @@ class KmlGlJsCanvas(val canvas: HTMLCanvasElement) : KmlGl() {
     override fun linkProgram(program: Int): Unit = gl.linkProgram(program.get())
     override fun pixelStorei(pname: Int, param: Int): Unit = gl.pixelStorei(pname, param)
     override fun polygonOffset(factor: Float, units: Float): Unit = gl.polygonOffset(factor, units)
-    override fun readPixels(x: Int, y: Int, width: Int, height: Int, format: Int, type: Int, pixels: KmlBuffer): Unit = gl.readPixels(x, y, width, height, format, type, pixels.arrayByte)
+    override fun readPixels(x: Int, y: Int, width: Int, height: Int, format: Int, type: Int, pixels: KmlBuffer): Unit = gl.readPixels(x, y, width, height, format, type, pixels.arrayUByte)
     override fun releaseShaderCompiler(): Unit = Unit
     override fun renderbufferStorage(target: Int, internalformat: Int, width: Int, height: Int): Unit = gl.renderbufferStorage(target, internalformat, width, height)
     override fun sampleCoverage(value: Float, invert: Boolean): Unit = gl.sampleCoverage(value, invert)
     override fun scissor(x: Int, y: Int, width: Int, height: Int): Unit = gl.scissor(x, y, width, height)
     override fun shaderBinary(count: Int, shaders: KmlBuffer, binaryformat: Int, binary: KmlBuffer, length: Int): Unit = throw KmlGlException("shaderBinary not implemented in Webgl")
-    override fun shaderSource(shader: Int, string: String): Unit = gl.shaderSource(shader.get(), string)
+    override fun shaderSource(shader: Int, string: String): Unit = run { gl.shaderSource(shader.get(), "#ifdef GL_ES\nprecision mediump float;\n#endif\n$string") }
     override fun stencilFunc(func: Int, ref: Int, mask: Int): Unit = gl.stencilFunc(func, ref, mask)
     override fun stencilFuncSeparate(face: Int, func: Int, ref: Int, mask: Int): Unit = gl.stencilFuncSeparate(face, func, ref, mask)
     override fun stencilMask(mask: Int): Unit = gl.stencilMask(mask)
     override fun stencilMaskSeparate(face: Int, mask: Int): Unit = gl.stencilMaskSeparate(face, mask)
     override fun stencilOp(fail: Int, zfail: Int, zpass: Int): Unit = gl.stencilOp(fail, zfail, zpass)
     override fun stencilOpSeparate(face: Int, sfail: Int, dpfail: Int, dppass: Int): Unit = gl.stencilOpSeparate(face, sfail, dpfail, dppass)
-    override fun texImage2D(target: Int, level: Int, internalformat: Int, width: Int, height: Int, border: Int, format: Int, type: Int, pixels: KmlBuffer): Unit = gl.texImage2D(target, level, internalformat, width, height, border, format, type, pixels.arrayByte)
+    override fun texImage2D(target: Int, level: Int, internalformat: Int, width: Int, height: Int, border: Int, format: Int, type: Int, pixels: KmlBuffer): Unit = gl.texImage2D(target, level, internalformat, width, height, border, format, type, pixels.arrayUByte)
     override fun texParameterf(target: Int, pname: Int, param: Float): Unit = gl.texParameterf(target, pname, param)
     override fun texParameterfv(target: Int, pname: Int, params: KmlBuffer): Unit = gl.texParameterf(target, pname, params.arrayFloat[0])
     override fun texParameteri(target: Int, pname: Int, param: Int): Unit = gl.texParameteri(target, pname, param)
     override fun texParameteriv(target: Int, pname: Int, params: KmlBuffer): Unit = gl.texParameteri(target, pname, params.arrayInt[0])
-    override fun texSubImage2D(target: Int, level: Int, xoffset: Int, yoffset: Int, width: Int, height: Int, format: Int, type: Int, pixels: KmlBuffer): Unit = gl.texSubImage2D(target, level, xoffset, yoffset, width, height, format, type, pixels.arrayByte)
+    override fun texSubImage2D(target: Int, level: Int, xoffset: Int, yoffset: Int, width: Int, height: Int, format: Int, type: Int, pixels: KmlBuffer): Unit = gl.texSubImage2D(target, level, xoffset, yoffset, width, height, format, type, pixels.arrayUByte)
     override fun uniform1f(location: Int, v0: Float): Unit = gl.uniform1f(location.get(), v0)
     override fun uniform1fv(location: Int, count: Int, value: KmlBuffer): Unit = gl.uniform1fv(location.get(), value.arrayFloat)
     override fun uniform1i(location: Int, v0: Int): Unit = gl.uniform1i(location.get(), v0)

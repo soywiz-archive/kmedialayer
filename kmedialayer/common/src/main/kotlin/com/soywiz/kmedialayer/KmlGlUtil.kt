@@ -157,7 +157,7 @@ class KmlGlTex(val gl: KmlGl, val texb: KmlIntBuffer) {
     }
 
     fun upload(width: Int, height: Int, data: KmlBuffer, format: Int = gl.RGBA, type: Int = gl.UNSIGNED_BYTE): KmlGlTex {
-        bind(7)
+        bind(0)
         gl.texImage2D(gl.TEXTURE_2D, 0, format, width, height, 0, format, type, data)
         return this
     }
