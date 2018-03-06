@@ -19,7 +19,9 @@ object KmlGenGl {
         println("abstract class KmlGl {")
         //println("    companion object {")
         for (const in OpenglDesc.constants.values) {
-            println("    val ${const.unprefixedName}: Int get() = ${"0x%04X".format(const.value)}")
+            //println("    val ${const.unprefixedName}: Int get() = ${"0x%04X".format(const.value)}")
+            println("    val ${const.unprefixedName}: Int = ${"0x%04X".format(const.value)}")
+            //println("    inline val ${const.unprefixedName}: Int get() = ${"0x%04X".format(const.value)}")
         }
         //println("    }")
         println("")
