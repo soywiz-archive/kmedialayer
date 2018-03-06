@@ -156,12 +156,21 @@ class BufferedImageKmlNativeImageData(val buffered: BufferedImage) : KmlNativeIm
     override val height: Int get() = buffered.height
     val bytes = (buffered.raster.dataBuffer as DataBufferByte).data
     init {
-        // FLIP R-A
+        //for (y in 0 until 32) {
+        //    val rowSize = 32 * 4
+        //    val index = y * rowSize
+        //    println(bytes.sliceArray(index + 32 until index + 64).toList())
+        //}
+
         for (n in 0 until bytes.size step 4) {
-            val r = bytes[n + 0]
-            val b = bytes[n + 2]
-            bytes[n + 0] = b
-            bytes[n + 2] = r
+            val v0 = bytes[n + 0]
+            val v1 = bytes[n + 1]
+            val v2 = bytes[n + 2]
+            val v3 = bytes[n + 3]
+            bytes[n + 0] = v3
+            bytes[n + 1] = v2
+            bytes[n + 2] = v1
+            bytes[n + 3] = v0
         }
     }
     val buffer = ByteBuffer.allocateDirect(bytes.size).apply {

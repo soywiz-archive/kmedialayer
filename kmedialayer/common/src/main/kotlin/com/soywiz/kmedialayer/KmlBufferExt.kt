@@ -18,3 +18,8 @@ fun KmlBuffer.putAsciiString(str: String): KmlBuffer {
     if (baseBuffer.size >= n) baseBuffer.setByte(n++, 0.toByte())
     return this
 }
+
+fun kmlByteBufferOf(vararg values: Byte) = values.toByteBuffer()
+fun kmlShortBufferOf(vararg values: Short) = values.toShortBuffer()
+fun kmlIntBufferOf(vararg values: Int) = values.toIntBuffer()
+fun kmlFloatBufferOf(vararg values: Float) = values.toFloatBuffer()

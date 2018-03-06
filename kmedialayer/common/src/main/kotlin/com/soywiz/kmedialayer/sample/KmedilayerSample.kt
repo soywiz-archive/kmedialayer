@@ -13,7 +13,8 @@ object KmedilayerSample {
             ), object : KMLWindowListener() {
                 lateinit var program: KmlGlProgram
                 lateinit var layout: KmlGlVertexLayout
-                lateinit var buffer: KmlGlBuffer
+                lateinit var vertexBuffer: KmlGlBuffer
+                lateinit var indexBuffer: KmlGlBuffer
                 lateinit var tex: KmlGlTex
                 val ortho = KmlGlUtil.ortho(640, 480)
 
@@ -44,28 +45,36 @@ object KmedilayerSample {
                         float("aPos", 2)
                         float("aTex", 2)
                     }
-                    buffer = createArrayBuffer()
+                    vertexBuffer = createArrayBuffer()
+                    indexBuffer = createElementArrayBuffer()
 
-                    val miniPNG = unhex("89504E470D0A1A0A0000000D494844520000002000000020080300000044A48AC600000006504C5445FFFFFF243B601B86B322000000414944415478DADDD2310A00200C0441F7FF9F160463E51D9888E03682994AD38A6324E792B03A0373B215717F19A8C80B3E1206BCFF4D0F8833BDD546D8872EAD03B22200D3EE8E10050000000049454E44AE426082")
+                    val miniPNG =
+                        unhex("89504E470D0A1A0A0000000D494844520000002000000020080300000044A48AC600000006504C5445FFFFFF243B601B86B322000000414944415478DADDD2310A00200C0441F7FF9F160463E51D9888E03682994AD38A6324E792B03A0373B215717F19A8C80B3E1206BCFF4D0F8833BDD546D8872EAD03B22200D3EE8E10050000000049454E44AE426082")
                     println("Decoding image...")
                     val miniImage = Kml.decodeImage(miniPNG)
                     println(miniImage)
 
-                    tex = createKmlTexture().upload(miniImage)
+                    tex = createKmlTexture().upload(miniImage).apply { smooth = false }
                     println("Created texture")
                     //tex = createKmlTexture().upload(2, 2, intArrayOf(0xFF0000FF.toInt(), 0xFFFF00FF.toInt(), 0xFF0000FF.toInt(), 0xFFFF00FF.toInt()).toIntBuffer())
                 }
 
                 var n = 0
                 override fun render(gl: KmlGl) = gl.run {
-                    buffer.setData(
-                        KmlFloatBuffer(
-                            floatArrayOf(
-                                0f, 0f, 0f, 0f,
-                                32f, 0f, 1f, 0f,
-                                0f, 32f, 0f, 1f,
-                                32f, 32f, 1f, 1f
-                            )
+                    val w = tex.width.toFloat() * 4
+                    val h = tex.height.toFloat() * 4
+                    vertexBuffer.setData(
+                        kmlFloatBufferOf(
+                            0f, 0f, 0f, 0f,
+                            w, 0f, 1f, 0f,
+                            0f, h, 0f, 1f,
+                            w, h, 1f, 1f
+                        )
+                    )
+                    indexBuffer.setData(
+                        kmlShortBufferOf(
+                            0, 1, 2,
+                            1, 2, 3
                         )
                     )
                     n++
@@ -73,10 +82,10 @@ object KmedilayerSample {
                     clear(COLOR_BUFFER_BIT)
 
                     //println(ortho)
-                    layout.drawArrays(buffer, TRIANGLE_STRIP, 0, 4) {
-                        tex.bind(0)
-                        gl.uniform1i(program.getUniformLocation("utex"), 0)
-                        gl.uniformMatrix4fv(program.getUniformLocation("uprojection"), 1, false, ortho)
+                    //layout.drawArrays(vertexBuffer, TRIANGLE_STRIP, 0, 4) {
+                    layout.drawElements(vertexBuffer, indexBuffer, TRIANGLES, 6) {
+                        uniformTex(program.getUniformLocation("utex"), tex, unit = 0)
+                        uniformMatrix4fv(program.getUniformLocation("uprojection"), 1, false, ortho)
                     }
                 }
 

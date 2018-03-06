@@ -137,30 +137,55 @@ fun KmlGl.createArrayBuffer(): KmlGlBuffer = createBuffer(ARRAY_BUFFER)
 fun KmlGl.createElementArrayBuffer(): KmlGlBuffer = createBuffer(ELEMENT_ARRAY_BUFFER)
 
 inline fun KmlGlVertexLayout.drawArrays(
-    buffer: KmlGlBuffer,
+    vertices: KmlGlBuffer,
     mode: Int,
     first: Int,
     count: Int,
-    uniforms: () -> Unit = {}
+    uniforms: KmlGl.() -> Unit = {}
 ) {
     this.use {
-        buffer.bind {
-            uniforms()
+        vertices.bind {
+            uniforms(gl)
             gl.drawArrays(mode, first, count)
         }
     }
 }
 
+inline fun KmlGlVertexLayout.drawElements(
+    vertices: KmlGlBuffer,
+    indices: KmlGlBuffer,
+    mode: Int,
+    count: Int,
+    type: Int = gl.UNSIGNED_SHORT,
+    offset: Int = 0,
+    uniforms: KmlGl.() -> Unit = {}
+) {
+    this.use {
+        vertices.bind {
+            indices.bind {
+                uniforms(gl)
+                gl.drawElements(mode, count, type, offset)
+            }
+        }
+    }
+}
+
 class KmlGlTex(val gl: KmlGl, val texb: KmlIntBuffer) {
+    var width = 0
+    var height = 0
     val tex get() = texb[0]
+
+    var smooth: Boolean = true
+    var clampToEdge: Boolean = true
+
 
     fun bind(unit: Int) = gl.run {
         activeTexture(TEXTURE0 + unit)
         bindTexture(TEXTURE_2D, tex)
-        texParameteri(TEXTURE_2D, TEXTURE_MIN_FILTER, LINEAR)
-        texParameteri(TEXTURE_2D, TEXTURE_MAG_FILTER, LINEAR)
-        texParameteri(TEXTURE_2D, TEXTURE_WRAP_S, CLAMP_TO_EDGE)
-        texParameteri(TEXTURE_2D, TEXTURE_WRAP_T, CLAMP_TO_EDGE)
+        texParameteri(TEXTURE_2D, TEXTURE_MIN_FILTER, if (smooth) gl.LINEAR else gl.NEAREST)
+        texParameteri(TEXTURE_2D, TEXTURE_MAG_FILTER, if (smooth) gl.LINEAR else gl.NEAREST)
+        texParameteri(TEXTURE_2D, TEXTURE_WRAP_S, if (clampToEdge) gl.CLAMP_TO_EDGE else gl.REPEAT)
+        texParameteri(TEXTURE_2D, TEXTURE_WRAP_T, if (clampToEdge) gl.CLAMP_TO_EDGE else gl.REPEAT)
     }
 
     fun upload(
@@ -172,12 +197,16 @@ class KmlGlTex(val gl: KmlGl, val texb: KmlIntBuffer) {
     ): KmlGlTex {
         bind(0)
         gl.texImage2D(gl.TEXTURE_2D, 0, format, width, height, 0, format, type, data)
+        this.width = width
+        this.height = height
         return this
     }
 
     fun upload(data: KmlNativeImageData, format: Int = gl.RGBA, type: Int = gl.UNSIGNED_BYTE): KmlGlTex {
         bind(0)
         gl.texImage2D(gl.TEXTURE_2D, 0, format, format, type, data)
+        this.width = data.width
+        this.height = data.height
         return this
     }
 
@@ -190,6 +219,11 @@ fun KmlGl.createKmlTexture(): KmlGlTex {
     val buf = KmlIntBuffer(1)
     genTextures(1, buf)
     return KmlGlTex(this, buf)
+}
+
+fun KmlGl.uniformTex(location: Int, tex: KmlGlTex, unit: Int) {
+    tex.bind(unit)
+    uniform1i(location, unit)
 }
 
 object KmlGlUtil {
@@ -230,5 +264,4 @@ object KmlGlUtil {
         M[15] = 1f
         return M
     }
-
 }
