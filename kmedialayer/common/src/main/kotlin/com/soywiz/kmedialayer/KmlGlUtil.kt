@@ -162,6 +162,12 @@ class KmlGlTex(val gl: KmlGl, val texb: KmlIntBuffer) {
         return this
     }
 
+    fun upload(data: KmlNativeImageData, format: Int = gl.RGBA, type: Int = gl.UNSIGNED_BYTE): KmlGlTex {
+        bind(0)
+        gl.texImage2D(gl.TEXTURE_2D, 0, format, format, type, data)
+        return this
+    }
+
     fun dispose() {
         gl.deleteTextures(1, texb)
     }

@@ -23,7 +23,7 @@ object KmlGenGl {
         }
         //println("    }")
         println("")
-        for (func in OpenglDesc.functions.values) {
+        for (func in OpenglDesc.functions) {
             println("    abstract fun ${func.unprefixedName}(${func.args.joinToString(", ") { it.name + ": " + it.type.ktname }}): ${func.rettype.ktname}")
         }
         println("}")
@@ -40,7 +40,7 @@ object KmlGenGl {
         println("import android.opengl.GLES20.*")
         println("")
         println("class KmlGlAndroid : KmlGl() {")
-        for (func in OpenglDesc.functions.values) {
+        for (func in OpenglDesc.functions) {
             val call = func.androidBody ?: "${func.name}(${func.args.joinToString(", ") { it.type.toAndroid(it.name) }})"
             println("    override fun ${func.unprefixedName}(${func.args.joinToString(", ") { it.name + ": " + it.type.ktname }}): ${func.rettype.ktname} = $call")
         }
@@ -65,8 +65,8 @@ object KmlGenGl {
         println("import java.nio.*")
         println("")
         println("class JvmKmlGl : KmlGl() {")
-        for (func in OpenglDesc.functions.values) {
-            val call = "${func.name}(${func.args.joinToString(", ") { it.type.toJVM(it.name) }})"
+        for (func in OpenglDesc.functions) {
+            val call = func.jvmBody ?: "${func.name}(${func.args.joinToString(", ") { it.type.toJVM(it.name) }})"
             println("    override fun ${func.unprefixedName}(${func.args.joinToString(", ") { it.name + ": " + it.type.ktname }}): ${func.rettype.ktname} = $call")
         }
         println("}")
@@ -92,7 +92,7 @@ object KmlGenGl {
         println("    private fun <T> Int.get(): T = items[this].unsafeCast<T>()")
         println("    private fun <T> Int.free(): T = run { val out = items[this].unsafeCast<T>(); freeList += this; items[this] = null; out }")
         println("")
-        for (func in OpenglDesc.functions.values) {
+        for (func in OpenglDesc.functions) {
             val call = func.jsBody ?: func.rettype.toJSReturn("gl.${func.jsName}(${func.args.joinToString(", ") { it.type.toJSParam(it.name) }})")
             println("    override fun ${func.unprefixedName}(${func.args.joinToString(", ") { it.name + ": " + it.type.ktname }}): ${func.rettype.ktname} = $call")
         }
@@ -108,25 +108,22 @@ object OpenglDesc {
     }
 
     data class Argument(val name: String, val type: GlType)
-    data class Function(val fname: FunctionName, val rettype: GlType, val args: List<Argument>, val jsBody: String? = null, val androidBody: String? = null) {
+    data class Function(val fname: FunctionName, val rettype: GlType, val args: List<Argument>, val jsBody: String? = null, val androidBody: String? = null, val jvmBody: String? = null) {
         val name = fname.name
         val unprefixedName = name.removePrefix("gl").decapitalize()
         val jsName get() = fname.jsName.removePrefix("gl").decapitalize()
     }
 
     val constants = LinkedHashMap<String, Constant>()
-    val functions = LinkedHashMap<String, Function>()
+    val functions = ArrayList<Function>()
 
     fun constant(name: String, value: Int) {
         constants[name] = Constant(name, value)
     }
 
-    fun function(rettype: GlType, name: FunctionName, vararg args: Pair<String, GlType>, jsBody: String? = null, androidBody: String? = null) {
-        functions[name.name] = Function(name, rettype, args.map { Argument(it.first, it.second) }.toList(), jsBody, androidBody)
+    fun function(rettype: GlType, name: FunctionName, vararg args: Pair<String, GlType>, jsBody: String? = null, androidBody: String? = null, jvmBody: String? = null) {
+        functions.add(Function(name, rettype, args.map { Argument(it.first, it.second) }.toList(), jsBody, androidBody, jvmBody))
     }
-
-    fun function(rettype: GlType, name: String, vararg args: Pair<String, GlType>, jsBody: String? = null, androidBody: String? = null) =
-        function(rettype, FunctionName(name), *args, jsBody = jsBody, androidBody = androidBody)
 
     open class GlType(val ktname: String) {
         //open val ktnameJS: String get() = ktname
@@ -145,6 +142,8 @@ object OpenglDesc {
     object GlFloat : GlType("Float")
     object GlBool : GlType("Boolean")
     object GlString : GlType("String")
+
+    object GlNativeImageData : GlType("KmlNativeImageData")
 
     open class GlTypeToInt : GlType("Int") {
         override fun toJSParam(param: String): String = "$param.get()"
@@ -483,47 +482,47 @@ object OpenglDesc {
         fun jsBodyDelete(delete: String, items: String = "items"): String = "run { for (p in 0 until n) gl.$delete($items.arrayInt[p].free()) }"
         fun jsBodyCreate(create: String, items: String = "items"): String = "run { for (p in 0 until n) $items.arrayInt[p] = gl.$create().alloc() }"
 
-        function(GlVoid, "glActiveTexture", "texture" to GlInt)
-        function(GlVoid, "glAttachShader", "program" to GlProgram, "shader" to GlShader)
-        function(GlVoid, "glBindAttribLocation", "program" to GlProgram, "index" to GlInt, "name" to GlString)
-        function(GlVoid, "glBindBuffer", "target" to GlInt, "buffer" to GlBuffer)
-        function(GlVoid, "glBindFramebuffer", "target" to GlInt, "framebuffer" to GlFramebuffer)
-        function(GlVoid, "glBindRenderbuffer", "target" to GlInt, "renderbuffer" to GlRenderbuffer)
-        function(GlVoid, "glBindTexture", "target" to GlInt, "texture" to GlTexture)
-        function(GlVoid, "glBlendColor", "red" to GlFloat, "green" to GlFloat, "blue" to GlFloat, "alpha" to GlFloat)
-        function(GlVoid, "glBlendEquation", "mode" to GlInt)
-        function(GlVoid, "glBlendEquationSeparate", "modeRGB" to GlInt, "modeAlpha" to GlInt)
-        function(GlVoid, "glBlendFunc", "sfactor" to GlInt, "dfactor" to GlInt)
+        function(GlVoid, FunctionName("glActiveTexture"), "texture" to GlInt)
+        function(GlVoid, FunctionName("glAttachShader"), "program" to GlProgram, "shader" to GlShader)
+        function(GlVoid, FunctionName("glBindAttribLocation"), "program" to GlProgram, "index" to GlInt, "name" to GlString)
+        function(GlVoid, FunctionName("glBindBuffer"), "target" to GlInt, "buffer" to GlBuffer)
+        function(GlVoid, FunctionName("glBindFramebuffer"), "target" to GlInt, "framebuffer" to GlFramebuffer)
+        function(GlVoid, FunctionName("glBindRenderbuffer"), "target" to GlInt, "renderbuffer" to GlRenderbuffer)
+        function(GlVoid, FunctionName("glBindTexture"), "target" to GlInt, "texture" to GlTexture)
+        function(GlVoid, FunctionName("glBlendColor"), "red" to GlFloat, "green" to GlFloat, "blue" to GlFloat, "alpha" to GlFloat)
+        function(GlVoid, FunctionName("glBlendEquation"), "mode" to GlInt)
+        function(GlVoid, FunctionName("glBlendEquationSeparate"), "modeRGB" to GlInt, "modeAlpha" to GlInt)
+        function(GlVoid, FunctionName("glBlendFunc"), "sfactor" to GlInt, "dfactor" to GlInt)
         function(
             GlVoid,
-            "glBlendFuncSeparate",
+            FunctionName("glBlendFuncSeparate"),
             "sfactorRGB" to GlInt,
             "dfactorRGB" to GlInt,
             "sfactorAlpha" to GlInt,
             "dfactorAlpha" to GlInt
         )
-        function(GlVoid, "glBufferData", "target" to GlInt, "size" to GlSize, "data" to GlVoidPtr, "usage" to GlInt, jsBody = "gl.bufferData(target, data.arrayBuffer, usage)") // @TODO: size
+        function(GlVoid, FunctionName("glBufferData"), "target" to GlInt, "size" to GlSize, "data" to GlVoidPtr, "usage" to GlInt, jsBody = "gl.bufferData(target, data.arrayBuffer, usage)") // @TODO: size
         function(
             GlVoid,
-            "glBufferSubData",
+            FunctionName("glBufferSubData"),
             "target" to GlInt,
             "offset" to GlSize,
             "size" to GlSize,
             "data" to GlVoidPtr,
             jsBody = "gl.bufferSubData(target, offset, data.arrayBuffer)" // @TODO: size
         )
-        function(GlInt, "glCheckFramebufferStatus", "target" to GlInt)
-        function(GlVoid, "glClear", "mask" to GlInt)
-        function(GlVoid, "glClearColor", "red" to GlFloat, "green" to GlFloat, "blue" to GlFloat, "alpha" to GlFloat)
+        function(GlInt, FunctionName("glCheckFramebufferStatus"), "target" to GlInt)
+        function(GlVoid,FunctionName( "glClear"), "mask" to GlInt)
+        function(GlVoid,FunctionName( "glClearColor"), "red" to GlFloat, "green" to GlFloat, "blue" to GlFloat, "alpha" to GlFloat)
 
         function(GlVoid, FunctionName("glClearDepthf", jsName = "glClearDepth"), "d" to GlFloat)
 
-        function(GlVoid, "glClearStencil", "s" to GlInt)
-        function(GlVoid, "glColorMask", "red" to GlBool, "green" to GlBool, "blue" to GlBool, "alpha" to GlBool)
-        function(GlVoid, "glCompileShader", "shader" to GlShader)
+        function(GlVoid, FunctionName("glClearStencil"), "s" to GlInt)
+        function(GlVoid, FunctionName("glColorMask"), "red" to GlBool, "green" to GlBool, "blue" to GlBool, "alpha" to GlBool)
+        function(GlVoid, FunctionName("glCompileShader"), "shader" to GlShader)
         function(
             GlVoid,
-            "glCompressedTexImage2D",
+            FunctionName("glCompressedTexImage2D"),
             "target" to GlInt,
             "level" to GlInt,
             "internalformat" to GlInt,
@@ -537,7 +536,7 @@ object OpenglDesc {
 
         function(
             GlVoid,
-            "glCompressedTexSubImage2D",
+            FunctionName("glCompressedTexSubImage2D"),
             "target" to GlInt,
             "level" to GlInt,
             "xoffset" to GlInt,
@@ -552,7 +551,7 @@ object OpenglDesc {
 
         function(
             GlVoid,
-            "glCopyTexImage2D",
+            FunctionName("glCopyTexImage2D"),
             "target" to GlInt,
             "level" to GlInt,
             "internalformat" to GlInt,
@@ -565,7 +564,7 @@ object OpenglDesc {
 
         function(
             GlVoid,
-            "glCopyTexSubImage2D",
+            FunctionName("glCopyTexSubImage2D"),
             "target" to GlInt,
             "level" to GlInt,
             "xoffset" to GlInt,
@@ -576,36 +575,36 @@ object OpenglDesc {
             "height" to GlInt
         )
 
-        function(GlProgram, "glCreateProgram")
-        function(GlShader, "glCreateShader", "type" to GlInt)
-        function(GlVoid, "glCullFace", "mode" to GlInt)
-        function(GlVoid, "glDeleteBuffers", "n" to GlInt, "items" to GlIntPtr, jsBody = jsBodyDelete("deleteBuffer", "items"))
-        function(GlVoid, "glDeleteFramebuffers", "n" to GlInt, "items" to GlIntPtr, jsBody = jsBodyDelete("deleteFramebuffer", "items"))
-        function(GlVoid, "glDeleteProgram", "program" to GlProgram)
-        function(GlVoid, "glDeleteRenderbuffers", "n" to GlInt, "items" to GlIntPtr, jsBody = jsBodyDelete("deleteRenderbuffer", "items"))
-        function(GlVoid, "glDeleteShader", "shader" to GlShader)
-        function(GlVoid, "glDeleteTextures", "n" to GlInt, "items" to GlIntPtr, jsBody = jsBodyDelete("deleteTexture", "items"))
-        function(GlVoid, "glDepthFunc", "func" to GlInt)
-        function(GlVoid, "glDepthMask", "flag" to GlBool)
+        function(GlProgram, FunctionName("glCreateProgram"))
+        function(GlShader, FunctionName("glCreateShader"), "type" to GlInt)
+        function(GlVoid, FunctionName("glCullFace"), "mode" to GlInt)
+        function(GlVoid, FunctionName("glDeleteBuffers"), "n" to GlInt, "items" to GlIntPtr, jsBody = jsBodyDelete("deleteBuffer", "items"))
+        function(GlVoid, FunctionName("glDeleteFramebuffers"), "n" to GlInt, "items" to GlIntPtr, jsBody = jsBodyDelete("deleteFramebuffer", "items"))
+        function(GlVoid, FunctionName("glDeleteProgram"), "program" to GlProgram)
+        function(GlVoid, FunctionName("glDeleteRenderbuffers"), "n" to GlInt, "items" to GlIntPtr, jsBody = jsBodyDelete("deleteRenderbuffer", "items"))
+        function(GlVoid, FunctionName("glDeleteShader"), "shader" to GlShader)
+        function(GlVoid, FunctionName("glDeleteTextures"), "n" to GlInt, "items" to GlIntPtr, jsBody = jsBodyDelete("deleteTexture", "items"))
+        function(GlVoid, FunctionName("glDepthFunc"), "func" to GlInt)
+        function(GlVoid, FunctionName("glDepthMask"), "flag" to GlBool)
         function(GlVoid, FunctionName("glDepthRangef", jsName = "glDepthRange"), "n" to GlFloat, "f" to GlFloat)
-        function(GlVoid, "glDetachShader", "program" to GlProgram, "shader" to GlShader)
-        function(GlVoid, "glDisable", "cap" to GlInt)
-        function(GlVoid, "glDisableVertexAttribArray", "index" to GlInt)
-        function(GlVoid, "glDrawArrays", "mode" to GlInt, "first" to GlInt, "count" to GlInt)
-        function(GlVoid, "glDrawElements",
+        function(GlVoid, FunctionName("glDetachShader"), "program" to GlProgram, "shader" to GlShader)
+        function(GlVoid, FunctionName("glDisable"), "cap" to GlInt)
+        function(GlVoid, FunctionName("glDisableVertexAttribArray"), "index" to GlInt)
+        function(GlVoid, FunctionName("glDrawArrays"), "mode" to GlInt, "first" to GlInt, "count" to GlInt)
+        function(GlVoid, FunctionName("glDrawElements"),
             "mode" to GlInt,
             "count" to GlInt,
             "type" to GlInt,
             "indices" to GlSize
             //"indices" to GlVoidPtr
         )
-        function(GlVoid, "glEnable", "cap" to GlInt)
-        function(GlVoid, "glEnableVertexAttribArray", "index" to GlInt)
-        function(GlVoid, "glFinish")
-        function(GlVoid, "glFlush")
+        function(GlVoid, FunctionName("glEnable"), "cap" to GlInt)
+        function(GlVoid, FunctionName("glEnableVertexAttribArray"), "index" to GlInt)
+        function(GlVoid, FunctionName("glFinish"))
+        function(GlVoid, FunctionName("glFlush"))
         function(
             GlVoid,
-            "glFramebufferRenderbuffer",
+            FunctionName("glFramebufferRenderbuffer"),
             "target" to GlInt,
             "attachment" to GlInt,
             "renderbuffertarget" to GlInt,
@@ -613,23 +612,23 @@ object OpenglDesc {
         )
         function(
             GlVoid,
-            "glFramebufferTexture2D",
+            FunctionName("glFramebufferTexture2D"),
             "target" to GlInt,
             "attachment" to GlInt,
             "textarget" to GlInt,
             "texture" to GlTexture,
             "level" to GlInt
         )
-        function(GlVoid, "glFrontFace", "mode" to GlInt)
+        function(GlVoid, FunctionName("glFrontFace"), "mode" to GlInt)
 
-        function(GlVoid, "glGenBuffers", "n" to GlInt, "buffers" to GlIntPtr, jsBody = jsBodyCreate("createBuffer", "buffers"))
-        function(GlVoid, "glGenerateMipmap", "target" to GlInt)
-        function(GlVoid, "glGenFramebuffers", "n" to GlInt, "framebuffers" to GlIntPtr, jsBody = jsBodyCreate("createFramebuffer", "framebuffers"))
-        function(GlVoid, "glGenRenderbuffers", "n" to GlInt, "renderbuffers" to GlIntPtr, jsBody = jsBodyCreate("createRenderbuffer", "renderbuffers"))
-        function(GlVoid, "glGenTextures", "n" to GlInt, "textures" to GlIntPtr, jsBody = jsBodyCreate("createTexture", "textures"))
+        function(GlVoid, FunctionName("glGenBuffers"), "n" to GlInt, "buffers" to GlIntPtr, jsBody = jsBodyCreate("createBuffer", "buffers"))
+        function(GlVoid, FunctionName("glGenerateMipmap"), "target" to GlInt)
+        function(GlVoid, FunctionName("glGenFramebuffers"), "n" to GlInt, "framebuffers" to GlIntPtr, jsBody = jsBodyCreate("createFramebuffer", "framebuffers"))
+        function(GlVoid, FunctionName("glGenRenderbuffers"), "n" to GlInt, "renderbuffers" to GlIntPtr, jsBody = jsBodyCreate("createRenderbuffer", "renderbuffers"))
+        function(GlVoid, FunctionName("glGenTextures"), "n" to GlInt, "textures" to GlIntPtr, jsBody = jsBodyCreate("createTexture", "textures"))
         function(
             GlVoid,
-            "glGetActiveAttrib",
+            FunctionName("glGetActiveAttrib"),
             "program" to GlProgram,
             "index" to GlInt,
             "bufSize" to GlInt,
@@ -643,7 +642,7 @@ object OpenglDesc {
 
         function(
             GlVoid,
-            "glGetActiveUniform",
+            FunctionName("glGetActiveUniform"),
             "program" to GlProgram,
             "index" to GlInt,
             "bufSize" to GlInt,
@@ -657,7 +656,7 @@ object OpenglDesc {
 
         function(
             GlVoid,
-            "glGetAttachedShaders",
+            FunctionName("glGetAttachedShaders"),
             "program" to GlProgram,
             "maxCount" to GlInt,
             "count" to GlIntPtr,
@@ -667,24 +666,24 @@ object OpenglDesc {
 
         fun getBase(type: String) = "run { data.array$type[0] = gl.getParameter(pname).unsafeCast<$type>() }"
 
-        function(GlInt, "glGetAttribLocation", "program" to GlProgram, "name" to GlString)
-        function(GlVoid, "glGetBooleanv", "pname" to GlInt, "data" to GlBoolPtr, jsBody = getBase("Int"))
-        function(GlVoid, "glGetBufferParameteriv", "target" to GlInt, "pname" to GlInt, "params" to GlIntPtr, jsBody = "run { params.arrayInt[0] = gl.getBufferParameter(target, pname).unsafeCast<Int>() }")
-        function(GlInt, "glGetError")
-        function(GlVoid, "glGetFloatv", "pname" to GlInt, "data" to GlFloatPtr, jsBody = getBase("Float"))
+        function(GlInt, FunctionName("glGetAttribLocation"), "program" to GlProgram, "name" to GlString)
+        function(GlVoid, FunctionName("glGetBooleanv"), "pname" to GlInt, "data" to GlBoolPtr, jsBody = getBase("Int"))
+        function(GlVoid, FunctionName("glGetBufferParameteriv"), "target" to GlInt, "pname" to GlInt, "params" to GlIntPtr, jsBody = "run { params.arrayInt[0] = gl.getBufferParameter(target, pname).unsafeCast<Int>() }")
+        function(GlInt, FunctionName("glGetError"))
+        function(GlVoid, FunctionName("glGetFloatv"), "pname" to GlInt, "data" to GlFloatPtr, jsBody = getBase("Float"))
         function(
             GlVoid,
-            "glGetFramebufferAttachmentParameteriv",
+            FunctionName("glGetFramebufferAttachmentParameteriv"),
             "target" to GlInt,
             "attachment" to GlInt,
             "pname" to GlInt,
             "params" to GlIntPtr,
             jsBody = "run { params.arrayInt[0] = gl.getFramebufferAttachmentParameter(target, attachment, pname).unsafeCast<Int>() }"
         )
-        function(GlVoid, "glGetIntegerv", "pname" to GlInt, "data" to GlIntPtr, jsBody = getBase("Int"))
+        function(GlVoid, FunctionName("glGetIntegerv"), "pname" to GlInt, "data" to GlIntPtr, jsBody = getBase("Int"))
         function(
             GlVoid,
-            "glGetProgramInfoLog",
+            FunctionName("glGetProgramInfoLog"),
             "program" to GlProgram,
             "bufSize" to GlInt,
             "length" to GlIntPtr,
@@ -692,8 +691,8 @@ object OpenglDesc {
             jsBody = "run { val str = gl.getProgramInfoLog(program.get()) ?: \"\"; length.arrayInt[0] = str.length; infoLog.putAsciiString(str) }",
             androidBody = "run { infoLog.putAsciiString(glGetProgramInfoLog(program)) }"
         )
-        function(GlVoid, "glGetRenderbufferParameteriv", "target" to GlInt, "pname" to GlInt, "params" to GlIntPtr, jsBody = "run { params.arrayInt[0] = gl.getRenderbufferParameter(target, pname).unsafeCast<Int>() }")
-        function(GlVoid, "glGetProgramiv", "program" to GlProgram, "pname" to GlInt, "params" to GlIntPtr,
+        function(GlVoid, FunctionName("glGetRenderbufferParameteriv"), "target" to GlInt, "pname" to GlInt, "params" to GlIntPtr, jsBody = "run { params.arrayInt[0] = gl.getRenderbufferParameter(target, pname).unsafeCast<Int>() }")
+        function(GlVoid, FunctionName("glGetProgramiv"), "program" to GlProgram, "pname" to GlInt, "params" to GlIntPtr,
             jsBody = """run {
                 when (pname) {
                     INFO_LOG_LENGTH -> params.arrayInt[0] = gl.getProgramInfoLog(program.get())?.length?.plus(1) ?: 1
@@ -701,7 +700,7 @@ object OpenglDesc {
                 }
             }""".trimIndent()
         )
-        function(GlVoid, "glGetShaderiv", "shader" to GlShader, "pname" to GlInt, "params" to GlIntPtr,
+        function(GlVoid, FunctionName("glGetShaderiv"), "shader" to GlShader, "pname" to GlInt, "params" to GlIntPtr,
             jsBody = """run {
                 when (pname) {
                     INFO_LOG_LENGTH -> params.arrayInt[0] = gl.getShaderInfoLog(shader.get())?.length?.plus(1) ?: 1
@@ -714,7 +713,7 @@ object OpenglDesc {
 
         function(
             GlVoid,
-            "glGetShaderInfoLog",
+            FunctionName("glGetShaderInfoLog"),
             "shader" to GlShader,
             "bufSize" to GlInt,
             "length" to GlIntPtr,
@@ -724,7 +723,7 @@ object OpenglDesc {
         )
         function(
             GlVoid,
-            "glGetShaderPrecisionFormat",
+            FunctionName("glGetShaderPrecisionFormat"),
             "shadertype" to GlInt,
             "precisiontype" to GlInt,
             "range" to GlIntPtr,
@@ -733,7 +732,7 @@ object OpenglDesc {
         )
         function(
             GlVoid,
-            "glGetShaderSource",
+            FunctionName("glGetShaderSource"),
             "shader" to GlShader,
             "bufSize" to GlInt,
             "length" to GlIntPtr,
@@ -741,30 +740,30 @@ object OpenglDesc {
             jsBody = "run { val str = gl.getShaderSource(shader.get()) ?: \"\"; length.arrayInt[0] = str.length; source.putAsciiString(str) }",
             androidBody = "run { val len = IntArray(1); glGetShaderiv(shader, GL_SHADER_SOURCE_LENGTH, len, 0); val src = ByteArray(len[0]); glGetShaderSource(shader, bufSize, len, 0, src, 0); source.putAsciiString(src.toString(Charsets.US_ASCII)) }"
         )
-        function(GlString, "glGetString", "name" to GlInt, jsBody = "gl.getParameter(name).unsafeCast<String>()")
-        function(GlVoid, "glGetTexParameterfv", "target" to GlInt, "pname" to GlInt, "params" to GlFloatPtr, jsBody = "run { params.arrayFloat[0] = gl.getTexParameter(target, pname).unsafeCast<Float>() }")
-        function(GlVoid, "glGetTexParameteriv", "target" to GlInt, "pname" to GlInt, "params" to GlIntPtr, jsBody = "run { params.arrayInt[0] = gl.getTexParameter(target, pname).unsafeCast<Int>() }")
-        function(GlVoid, "glGetUniformfv", "program" to GlProgram, "location" to GlUniformLocation, "params" to GlFloatPtr, jsBody = "run { params.arrayFloat[0] = gl.getUniform(program.get(), location.get()).unsafeCast<Float>() }")
-        function(GlVoid, "glGetUniformiv", "program" to GlProgram, "location" to GlUniformLocation, "params" to GlIntPtr, jsBody = "run { params.arrayInt[0] = gl.getUniform(program.get(), location.get()).unsafeCast<Int>() }")
-        function(GlUniformLocation, "glGetUniformLocation", "program" to GlProgram, "name" to GlString)
-        function(GlVoid, "glGetVertexAttribfv", "index" to GlInt, "pname" to GlInt, "params" to GlFloatPtr, jsBody = "run { params.arrayFloat[0] = gl.getVertexAttrib(index, pname).unsafeCast<Float>() }")
-        function(GlVoid, "glGetVertexAttribiv", "index" to GlInt, "pname" to GlInt, "params" to GlIntPtr, jsBody = "run { params.arrayInt[0] = gl.getVertexAttrib(index, pname).unsafeCast<Int>() }")
-        function(GlVoid, "glGetVertexAttribPointerv", "index" to GlInt, "pname" to GlInt, "pointer" to GlVoidPtr, jsBody = "run { pointer.arrayInt[0] = gl.getVertexAttrib(index, pname).unsafeCast<Int>() }", androidBody = "TODO()")
-        function(GlVoid, "glHint", "target" to GlInt, "mode" to GlInt)
-        function(GlBool, "glIsBuffer", "buffer" to GlBuffer)
-        function(GlBool, "glIsEnabled", "cap" to GlInt)
-        function(GlBool, "glIsFramebuffer", "framebuffer" to GlFramebuffer)
-        function(GlBool, "glIsProgram", "program" to GlProgram)
-        function(GlBool, "glIsRenderbuffer", "renderbuffer" to GlRenderbuffer)
-        function(GlBool, "glIsShader", "shader" to GlShader)
-        function(GlBool, "glIsTexture", "texture" to GlTexture)
-        function(GlVoid, "glLineWidth", "width" to GlFloat)
-        function(GlVoid, "glLinkProgram", "program" to GlProgram)
-        function(GlVoid, "glPixelStorei", "pname" to GlInt, "param" to GlInt)
-        function(GlVoid, "glPolygonOffset", "factor" to GlFloat, "units" to GlFloat)
+        function(GlString, FunctionName("glGetString"), "name" to GlInt, jsBody = "gl.getParameter(name).unsafeCast<String>()")
+        function(GlVoid, FunctionName("glGetTexParameterfv"), "target" to GlInt, "pname" to GlInt, "params" to GlFloatPtr, jsBody = "run { params.arrayFloat[0] = gl.getTexParameter(target, pname).unsafeCast<Float>() }")
+        function(GlVoid, FunctionName("glGetTexParameteriv"), "target" to GlInt, "pname" to GlInt, "params" to GlIntPtr, jsBody = "run { params.arrayInt[0] = gl.getTexParameter(target, pname).unsafeCast<Int>() }")
+        function(GlVoid, FunctionName("glGetUniformfv"), "program" to GlProgram, "location" to GlUniformLocation, "params" to GlFloatPtr, jsBody = "run { params.arrayFloat[0] = gl.getUniform(program.get(), location.get()).unsafeCast<Float>() }")
+        function(GlVoid, FunctionName("glGetUniformiv"), "program" to GlProgram, "location" to GlUniformLocation, "params" to GlIntPtr, jsBody = "run { params.arrayInt[0] = gl.getUniform(program.get(), location.get()).unsafeCast<Int>() }")
+        function(GlUniformLocation, FunctionName("glGetUniformLocation"), "program" to GlProgram, "name" to GlString)
+        function(GlVoid, FunctionName("glGetVertexAttribfv"), "index" to GlInt, "pname" to GlInt, "params" to GlFloatPtr, jsBody = "run { params.arrayFloat[0] = gl.getVertexAttrib(index, pname).unsafeCast<Float>() }")
+        function(GlVoid, FunctionName("glGetVertexAttribiv"), "index" to GlInt, "pname" to GlInt, "params" to GlIntPtr, jsBody = "run { params.arrayInt[0] = gl.getVertexAttrib(index, pname).unsafeCast<Int>() }")
+        function(GlVoid, FunctionName("glGetVertexAttribPointerv"), "index" to GlInt, "pname" to GlInt, "pointer" to GlVoidPtr, jsBody = "run { pointer.arrayInt[0] = gl.getVertexAttrib(index, pname).unsafeCast<Int>() }", androidBody = "TODO()")
+        function(GlVoid, FunctionName("glHint"), "target" to GlInt, "mode" to GlInt)
+        function(GlBool, FunctionName("glIsBuffer"), "buffer" to GlBuffer)
+        function(GlBool, FunctionName("glIsEnabled"), "cap" to GlInt)
+        function(GlBool, FunctionName("glIsFramebuffer"), "framebuffer" to GlFramebuffer)
+        function(GlBool, FunctionName("glIsProgram"), "program" to GlProgram)
+        function(GlBool, FunctionName("glIsRenderbuffer"), "renderbuffer" to GlRenderbuffer)
+        function(GlBool, FunctionName("glIsShader"), "shader" to GlShader)
+        function(GlBool, FunctionName("glIsTexture"), "texture" to GlTexture)
+        function(GlVoid, FunctionName("glLineWidth"), "width" to GlFloat)
+        function(GlVoid, FunctionName("glLinkProgram"), "program" to GlProgram)
+        function(GlVoid, FunctionName("glPixelStorei"), "pname" to GlInt, "param" to GlInt)
+        function(GlVoid, FunctionName("glPolygonOffset"), "factor" to GlFloat, "units" to GlFloat)
         function(
             GlVoid,
-            "glReadPixels",
+            FunctionName("glReadPixels"),
             "x" to GlInt,
             "y" to GlInt,
             "width" to GlInt,
@@ -773,20 +772,20 @@ object OpenglDesc {
             "type" to GlInt,
             "pixels" to GlVoidPtr
         )
-        function(GlVoid, "glReleaseShaderCompiler", jsBody = "Unit")
+        function(GlVoid, FunctionName("glReleaseShaderCompiler"), jsBody = "Unit")
         function(
             GlVoid,
-            "glRenderbufferStorage",
+            FunctionName("glRenderbufferStorage"),
             "target" to GlInt,
             "internalformat" to GlInt,
             "width" to GlInt,
             "height" to GlInt
         )
-        function(GlVoid, "glSampleCoverage", "value" to GlFloat, "invert" to GlBool)
-        function(GlVoid, "glScissor", "x" to GlInt, "y" to GlInt, "width" to GlInt, "height" to GlInt)
+        function(GlVoid, FunctionName("glSampleCoverage"), "value" to GlFloat, "invert" to GlBool)
+        function(GlVoid, FunctionName("glScissor"), "x" to GlInt, "y" to GlInt, "width" to GlInt, "height" to GlInt)
         function(
             GlVoid,
-            "glShaderBinary",
+            FunctionName("glShaderBinary"),
             "count" to GlInt,
             "shaders" to GlIntPtr,
             "binaryformat" to GlInt,
@@ -798,7 +797,7 @@ object OpenglDesc {
         // SPECIAL
         function(
             GlVoid,
-            "glShaderSource",
+            FunctionName("glShaderSource"),
             "shader" to GlShader,
             "string" to GlString,
             //"count" to GlInt,
@@ -806,15 +805,15 @@ object OpenglDesc {
             //"length" to GlIntPtr,
             jsBody = "run { gl.shaderSource(shader.get(), \"#ifdef GL_ES\\nprecision mediump float;\\n#endif\\n\$string\") }"
         )
-        function(GlVoid, "glStencilFunc", "func" to GlInt, "ref" to GlInt, "mask" to GlInt)
-        function(GlVoid, "glStencilFuncSeparate", "face" to GlInt, "func" to GlInt, "ref" to GlInt, "mask" to GlInt)
-        function(GlVoid, "glStencilMask", "mask" to GlInt)
-        function(GlVoid, "glStencilMaskSeparate", "face" to GlInt, "mask" to GlInt)
-        function(GlVoid, "glStencilOp", "fail" to GlInt, "zfail" to GlInt, "zpass" to GlInt)
-        function(GlVoid, "glStencilOpSeparate", "face" to GlInt, "sfail" to GlInt, "dpfail" to GlInt, "dppass" to GlInt)
+        function(GlVoid, FunctionName("glStencilFunc"), "func" to GlInt, "ref" to GlInt, "mask" to GlInt)
+        function(GlVoid, FunctionName("glStencilFuncSeparate"), "face" to GlInt, "func" to GlInt, "ref" to GlInt, "mask" to GlInt)
+        function(GlVoid, FunctionName("glStencilMask"), "mask" to GlInt)
+        function(GlVoid, FunctionName("glStencilMaskSeparate"), "face" to GlInt, "mask" to GlInt)
+        function(GlVoid, FunctionName("glStencilOp"), "fail" to GlInt, "zfail" to GlInt, "zpass" to GlInt)
+        function(GlVoid, FunctionName("glStencilOpSeparate"), "face" to GlInt, "sfail" to GlInt, "dpfail" to GlInt, "dppass" to GlInt)
         function(
             GlVoid,
-            "glTexImage2D",
+            FunctionName("glTexImage2D"),
             "target" to GlInt,
             "level" to GlInt,
             "internalformat" to GlInt,
@@ -826,13 +825,27 @@ object OpenglDesc {
             "pixels" to GlVoidPtr
         )
 
-        function(GlVoid, "glTexParameterf", "target" to GlInt, "pname" to GlInt, "param" to GlFloat)
-        function(GlVoid, "glTexParameterfv", "target" to GlInt, "pname" to GlInt, "params" to GlFloatPtr, jsBody = "gl.texParameterf(target, pname, params.arrayFloat[0])")
-        function(GlVoid, "glTexParameteri", "target" to GlInt, "pname" to GlInt, "param" to GlInt)
-        function(GlVoid, "glTexParameteriv", "target" to GlInt, "pname" to GlInt, "params" to GlIntPtr, jsBody = "gl.texParameteri(target, pname, params.arrayInt[0])")
+        // JS NATIVE
         function(
             GlVoid,
-            "glTexSubImage2D",
+            FunctionName("glTexImage2D"),
+            "target" to GlInt,
+            "level" to GlInt,
+            "internalformat" to GlInt,
+            "format" to GlInt,
+            "type" to GlInt,
+            "data" to GlNativeImageData,
+            jsBody = "gl.texImage2D(target, level, internalformat, format, type, (data as KmlImgNativeImageData).img)",
+            jvmBody = "glTexImage2D(target, level, internalformat, data.width, data.height, 0, format, type, (data as BufferedImageKmlNativeImageData).buffer)"
+        )
+
+        function(GlVoid, FunctionName("glTexParameterf"), "target" to GlInt, "pname" to GlInt, "param" to GlFloat)
+        function(GlVoid, FunctionName("glTexParameterfv"), "target" to GlInt, "pname" to GlInt, "params" to GlFloatPtr, jsBody = "gl.texParameterf(target, pname, params.arrayFloat[0])")
+        function(GlVoid, FunctionName("glTexParameteri"), "target" to GlInt, "pname" to GlInt, "param" to GlInt)
+        function(GlVoid, FunctionName("glTexParameteriv"), "target" to GlInt, "pname" to GlInt, "params" to GlIntPtr, jsBody = "gl.texParameteri(target, pname, params.arrayInt[0])")
+        function(
+            GlVoid,
+            FunctionName("glTexSubImage2D"),
             "target" to GlInt,
             "level" to GlInt,
             "xoffset" to GlInt,
@@ -846,33 +859,33 @@ object OpenglDesc {
 
         fun jsUniformXfv(count: Int) = "gl.uniform${count}fv(location.get(), value.arrayFloat)"
         fun jsUniformXiv(count: Int) = "gl.uniform${count}iv(location.get(), value.arrayInt)"
-        function(GlVoid, "glUniform1f", "location" to GlUniformLocation, "v0" to GlFloat)
-        function(GlVoid, "glUniform1fv", "location" to GlUniformLocation, "count" to GlInt, "value" to GlFloatPtr, jsBody = jsUniformXfv(1))
-        function(GlVoid, "glUniform1i", "location" to GlUniformLocation, "v0" to GlInt)
-        function(GlVoid, "glUniform1iv", "location" to GlUniformLocation, "count" to GlInt, "value" to GlIntPtr, jsBody = jsUniformXiv(1))
-        function(GlVoid, "glUniform2f", "location" to GlUniformLocation, "v0" to GlFloat, "v1" to GlFloat)
-        function(GlVoid, "glUniform2fv", "location" to GlUniformLocation, "count" to GlInt, "value" to GlFloatPtr, jsBody = jsUniformXfv(2))
-        function(GlVoid, "glUniform2i", "location" to GlUniformLocation, "v0" to GlInt, "v1" to GlInt)
-        function(GlVoid, "glUniform2iv", "location" to GlUniformLocation, "count" to GlInt, "value" to GlIntPtr, jsBody = jsUniformXiv(2))
-        function(GlVoid, "glUniform3f", "location" to GlUniformLocation, "v0" to GlFloat, "v1" to GlFloat, "v2" to GlFloat)
-        function(GlVoid, "glUniform3fv", "location" to GlUniformLocation, "count" to GlInt, "value" to GlFloatPtr, jsBody = jsUniformXfv(3))
-        function(GlVoid, "glUniform3i", "location" to GlUniformLocation, "v0" to GlInt, "v1" to GlInt, "v2" to GlInt)
-        function(GlVoid, "glUniform3iv", "location" to GlUniformLocation, "count" to GlInt, "value" to GlIntPtr, jsBody = jsUniformXiv(3))
+        function(GlVoid, FunctionName("glUniform1f"), "location" to GlUniformLocation, "v0" to GlFloat)
+        function(GlVoid, FunctionName("glUniform1fv"), "location" to GlUniformLocation, "count" to GlInt, "value" to GlFloatPtr, jsBody = jsUniformXfv(1))
+        function(GlVoid, FunctionName("glUniform1i"), "location" to GlUniformLocation, "v0" to GlInt)
+        function(GlVoid, FunctionName("glUniform1iv"), "location" to GlUniformLocation, "count" to GlInt, "value" to GlIntPtr, jsBody = jsUniformXiv(1))
+        function(GlVoid, FunctionName("glUniform2f"), "location" to GlUniformLocation, "v0" to GlFloat, "v1" to GlFloat)
+        function(GlVoid, FunctionName("glUniform2fv"), "location" to GlUniformLocation, "count" to GlInt, "value" to GlFloatPtr, jsBody = jsUniformXfv(2))
+        function(GlVoid, FunctionName("glUniform2i"), "location" to GlUniformLocation, "v0" to GlInt, "v1" to GlInt)
+        function(GlVoid, FunctionName("glUniform2iv"), "location" to GlUniformLocation, "count" to GlInt, "value" to GlIntPtr, jsBody = jsUniformXiv(2))
+        function(GlVoid, FunctionName("glUniform3f"), "location" to GlUniformLocation, "v0" to GlFloat, "v1" to GlFloat, "v2" to GlFloat)
+        function(GlVoid, FunctionName("glUniform3fv"), "location" to GlUniformLocation, "count" to GlInt, "value" to GlFloatPtr, jsBody = jsUniformXfv(3))
+        function(GlVoid, FunctionName("glUniform3i"), "location" to GlUniformLocation, "v0" to GlInt, "v1" to GlInt, "v2" to GlInt)
+        function(GlVoid, FunctionName("glUniform3iv"), "location" to GlUniformLocation, "count" to GlInt, "value" to GlIntPtr, jsBody = jsUniformXiv(3))
         function(
             GlVoid,
-            "glUniform4f",
+            FunctionName("glUniform4f"),
             "location" to GlUniformLocation,
             "v0" to GlFloat,
             "v1" to GlFloat,
             "v2" to GlFloat,
             "v3" to GlFloat
         )
-        function(GlVoid, "glUniform4fv", "location" to GlUniformLocation, "count" to GlInt, "value" to GlFloatPtr, jsBody = jsUniformXfv(4))
-        function(GlVoid, "glUniform4i", "location" to GlUniformLocation, "v0" to GlInt, "v1" to GlInt, "v2" to GlInt, "v3" to GlInt)
-        function(GlVoid, "glUniform4iv", "location" to GlUniformLocation, "count" to GlInt, "value" to GlIntPtr, jsBody = jsUniformXiv(4))
+        function(GlVoid, FunctionName("glUniform4fv"), "location" to GlUniformLocation, "count" to GlInt, "value" to GlFloatPtr, jsBody = jsUniformXfv(4))
+        function(GlVoid, FunctionName("glUniform4i"), "location" to GlUniformLocation, "v0" to GlInt, "v1" to GlInt, "v2" to GlInt, "v3" to GlInt)
+        function(GlVoid, FunctionName("glUniform4iv"), "location" to GlUniformLocation, "count" to GlInt, "value" to GlIntPtr, jsBody = jsUniformXiv(4))
         function(
             GlVoid,
-            "glUniformMatrix2fv",
+            FunctionName("glUniformMatrix2fv"),
             "location" to GlUniformLocation,
             "count" to GlInt,
             "transpose" to GlBool,
@@ -881,7 +894,7 @@ object OpenglDesc {
         )
         function(
             GlVoid,
-            "glUniformMatrix3fv",
+            FunctionName("glUniformMatrix3fv"),
             "location" to GlUniformLocation,
             "count" to GlInt,
             "transpose" to GlBool,
@@ -890,34 +903,34 @@ object OpenglDesc {
         )
         function(
             GlVoid,
-            "glUniformMatrix4fv",
+            FunctionName("glUniformMatrix4fv"),
             "location" to GlUniformLocation,
             "count" to GlInt,
             "transpose" to GlBool,
             "value" to GlFloatPtr,
             jsBody = "gl.uniformMatrix4fv(location.get(), transpose, value.arrayFloat)"
         )
-        function(GlVoid, "glUseProgram", "program" to GlProgram)
-        function(GlVoid, "glValidateProgram", "program" to GlProgram)
-        function(GlVoid, "glVertexAttrib1f", "index" to GlInt, "x" to GlFloat)
-        function(GlVoid, "glVertexAttrib1fv", "index" to GlInt, "v" to GlFloatPtr)
-        function(GlVoid, "glVertexAttrib2f", "index" to GlInt, "x" to GlFloat, "y" to GlFloat)
-        function(GlVoid, "glVertexAttrib2fv", "index" to GlInt, "v" to GlFloatPtr)
-        function(GlVoid, "glVertexAttrib3f", "index" to GlInt, "x" to GlFloat, "y" to GlFloat, "z" to GlFloat)
-        function(GlVoid, "glVertexAttrib3fv", "index" to GlInt, "v" to GlFloatPtr)
+        function(GlVoid, FunctionName("glUseProgram"), "program" to GlProgram)
+        function(GlVoid, FunctionName("glValidateProgram"), "program" to GlProgram)
+        function(GlVoid, FunctionName("glVertexAttrib1f"), "index" to GlInt, "x" to GlFloat)
+        function(GlVoid, FunctionName("glVertexAttrib1fv"), "index" to GlInt, "v" to GlFloatPtr)
+        function(GlVoid, FunctionName("glVertexAttrib2f"), "index" to GlInt, "x" to GlFloat, "y" to GlFloat)
+        function(GlVoid, FunctionName("glVertexAttrib2fv"), "index" to GlInt, "v" to GlFloatPtr)
+        function(GlVoid, FunctionName("glVertexAttrib3f"), "index" to GlInt, "x" to GlFloat, "y" to GlFloat, "z" to GlFloat)
+        function(GlVoid, FunctionName("glVertexAttrib3fv"), "index" to GlInt, "v" to GlFloatPtr)
         function(
             GlVoid,
-            "glVertexAttrib4f",
+            FunctionName("glVertexAttrib4f"),
             "index" to GlInt,
             "x" to GlFloat,
             "y" to GlFloat,
             "z" to GlFloat,
             "w" to GlFloat
         )
-        function(GlVoid, "glVertexAttrib4fv", "index" to GlInt, "v" to GlFloatPtr)
+        function(GlVoid, FunctionName("glVertexAttrib4fv"), "index" to GlInt, "v" to GlFloatPtr)
         function(
             GlVoid,
-            "glVertexAttribPointer",
+            FunctionName("glVertexAttribPointer"),
             "index" to GlInt,
             "size" to GlInt,
             "type" to GlInt,
@@ -927,6 +940,6 @@ object OpenglDesc {
             "pointer" to GlSize
         )
 
-        function(GlVoid, "glViewport", "x" to GlInt, "y" to GlInt, "width" to GlInt, "height" to GlInt)
+        function(GlVoid, FunctionName("glViewport"), "x" to GlInt, "y" to GlInt, "width" to GlInt, "height" to GlInt)
     }
 }

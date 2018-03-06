@@ -1,6 +1,7 @@
 package com.soywiz.kmedialayer.sample
 
 import com.soywiz.kmedialayer.*
+import com.soywiz.kmedialayer.util.*
 
 object KmedilayerSample {
     fun main(args: Array<String>) {
@@ -15,7 +16,7 @@ object KmedilayerSample {
                 lateinit var buffer: KmlGlBuffer
                 lateinit var tex: KmlGlTex
 
-                override fun init(gl: KmlGl) = gl.run {
+                override suspend fun init(gl: KmlGl) = gl.run {
                     program = createProgram(
                         vertex = """
                             attribute vec2 aPos;
@@ -42,12 +43,15 @@ object KmedilayerSample {
                         float("aTex", 2)
                     }
                     buffer = createArrayBuffer()
-                    tex = createKmlTexture().upload(
-                        2, 2, intArrayOf(
-                            0xFF0000FF.toInt(), 0xFF00FFFF.toInt(),
-                            0xFF00FFFF.toInt(), 0xFF0000FF.toInt()
-                        ).toIntBuffer()
-                    )
+
+                    val miniPNG = unhex("89504E470D0A1A0A0000000D494844520000002000000020080300000044A48AC600000006504C5445FFFFFF243B601B86B322000000414944415478DADDD2310A00200C0441F7FF9F160463E51D9888E03682994AD38A6324E792B03A0373B215717F19A8C80B3E1206BCFF4D0F8833BDD546D8872EAD03B22200D3EE8E10050000000049454E44AE426082")
+                    println("Decoding image...")
+                    val miniImage = Kml.decodeImage(miniPNG)
+                    println(miniImage)
+
+                    tex = createKmlTexture().upload(miniImage)
+                    println("Created texture")
+                    //tex = createKmlTexture().upload(2, 2, intArrayOf(0xFF0000FF.toInt(), 0xFFFF00FF.toInt(), 0xFF0000FF.toInt(), 0xFFFF00FF.toInt()).toIntBuffer())
                 }
 
                 var n = 0

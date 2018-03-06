@@ -120,6 +120,7 @@ class JvmKmlGl : KmlGl() {
     override fun stencilOp(fail: Int, zfail: Int, zpass: Int): Unit = glStencilOp(fail, zfail, zpass)
     override fun stencilOpSeparate(face: Int, sfail: Int, dpfail: Int, dppass: Int): Unit = glStencilOpSeparate(face, sfail, dpfail, dppass)
     override fun texImage2D(target: Int, level: Int, internalformat: Int, width: Int, height: Int, border: Int, format: Int, type: Int, pixels: KmlBuffer): Unit = glTexImage2D(target, level, internalformat, width, height, border, format, type, pixels.nioBuffer)
+    override fun texImage2D(target: Int, level: Int, internalformat: Int, format: Int, type: Int, data: KmlNativeImageData): Unit = glTexImage2D(target, level, internalformat, data.width, data.height, 0, format, type, (data as BufferedImageKmlNativeImageData).buffer)
     override fun texParameterf(target: Int, pname: Int, param: Float): Unit = glTexParameterf(target, pname, param)
     override fun texParameterfv(target: Int, pname: Int, params: KmlBuffer): Unit = glTexParameterfv(target, pname, params.nioBuffer)
     override fun texParameteri(target: Int, pname: Int, param: Int): Unit = glTexParameteri(target, pname, param)

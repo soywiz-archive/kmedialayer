@@ -1,7 +1,7 @@
 package com.soywiz.kmedialayer
 
-actual object Kml {
-    actual fun application(windowConfig: WindowConfig, listener: KMLWindowListener) {
+actual val Kml = object : KmlBase() {
+    override fun application(windowConfig: WindowConfig, listener: KMLWindowListener) {
         TODO()
     }
 }

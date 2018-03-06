@@ -1,18 +1,31 @@
 package com.soywiz.kmedialayer
 
+import org.khronos.webgl.*
 import org.w3c.dom.*
 import org.w3c.dom.events.*
+import org.w3c.dom.url.*
+import org.w3c.files.*
 import kotlin.browser.*
+import kotlin.coroutines.experimental.*
 
-actual object Kml {
-    actual fun application(windowConfig: WindowConfig, listener: KMLWindowListener) {
+fun launch(context: CoroutineContext = EmptyCoroutineContext, callback: suspend () -> Unit) {
+    callback.startCoroutine(object : Continuation<Unit> {
+        override val context: CoroutineContext = context
+        override fun resume(value: Unit) = Unit
+        override fun resumeWithException(exception: Throwable) = console.error(exception)
+    })
+}
+
+actual val Kml: KmlBase = object : KmlBase() {
+    override fun application(windowConfig: WindowConfig, listener: KMLWindowListener) = launch {
         document.title = windowConfig.title
-        val canvas = (document.getElementById("kml-canvas") ?: ((document.createElement("canvas") as HTMLCanvasElement).apply {
-            id = "kml-canvas"
-            width = windowConfig.width
-            height = windowConfig.height
-            document.body!!.appendChild(this)
-        })) as HTMLCanvasElement
+        val canvas =
+            (document.getElementById("kml-canvas") ?: ((document.createElement("canvas") as HTMLCanvasElement).apply {
+                id = "kml-canvas"
+                width = windowConfig.width
+                height = windowConfig.height
+                document.body!!.appendChild(this)
+            })) as HTMLCanvasElement
 
         var mouseX = 0
         var mouseY = 0
@@ -48,4 +61,29 @@ actual object Kml {
 
         frame(0.0)
     }
+
+    override suspend fun decodeImage(path: String): KmlNativeImageData = suspendCoroutine { c ->
+        val image = document.createElement("img").unsafeCast<HTMLImageElement>()
+        image.src = path
+        image.onerror = { _, msg, _, _, _ ->
+            c.resumeWithException(Exception("Error loading image: $msg"))
+        }
+        image.onload = {
+            c.resume(KmlImgNativeImageData(image))
+        }
+    }
+
+    override suspend fun decodeImage(data: ByteArray): KmlNativeImageData {
+        val url = URL.createObjectURL(Blob(arrayOf(data.unsafeCast<Int8Array>())))
+        try {
+            return decodeImage(url)
+        } finally {
+            URL.revokeObjectURL(url)
+        }
+    }
+}
+
+class KmlImgNativeImageData(val img: HTMLImageElement) : KmlNativeImageData {
+    override val width get() = img.width
+    override val height get() = img.width
 }

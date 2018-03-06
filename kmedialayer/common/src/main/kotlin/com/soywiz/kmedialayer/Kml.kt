@@ -6,12 +6,24 @@ data class WindowConfig(
     val title: String = "KMediaLayer"
 )
 
-expect object Kml {
-    fun application(windowConfig: WindowConfig, listener: KMLWindowListener)
+abstract class KmlBase {
+    open fun application(windowConfig: WindowConfig, listener: KMLWindowListener) {
+        TODO("KmlBase.application()")
+    }
+
+    open suspend fun decodeImage(path: String): KmlNativeImageData {
+        TODO("KmlBase.decodeImage(String)")
+    }
+
+    open suspend fun decodeImage(data: ByteArray): KmlNativeImageData {
+        TODO("KmlBase.decodeImage(ByteArray)")
+    }
 }
 
+expect val Kml: KmlBase
+
 open class KMLWindowListener {
-    open fun init(gl: KmlGl): Unit = gl.run {
+    open suspend fun init(gl: KmlGl): Unit = gl.run {
     }
 
     open fun render(gl: KmlGl): Unit = gl.run {
@@ -27,4 +39,9 @@ open class KMLWindowListener {
 
     open fun mouseUpdate(x: Int, y: Int, buttons: Int) {
     }
+}
+
+interface KmlNativeImageData {
+    val width: Int
+    val height: Int
 }
