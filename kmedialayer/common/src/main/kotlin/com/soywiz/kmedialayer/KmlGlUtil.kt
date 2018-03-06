@@ -5,6 +5,7 @@ class KmlGlProgram(val gl: KmlGl, val program: Int, val vertex: Int, val fragmen
     fun use() = gl.useProgram(program)
     fun unuse() = gl.useProgram(0)
     fun getAttribLocation(name: String) = gl.getAttribLocation(program, name)
+    fun getUniformLocation(name: String) = gl.getUniformLocation(program, name)
     fun dispose() {
         gl.deleteProgram(program)
         gl.deleteShader(vertex)
@@ -43,7 +44,7 @@ fun KmlGl.createProgram(vertex: String, fragment: String): KmlGlProgram {
 class KmlGlVertexLayout(val program: KmlGlProgram) {
     data class Element(val index: Int, val size: Int, val type: Int, val pointer: Int, val normalized: Boolean)
 
-    private val gl = program.gl
+    val gl = program.gl
     private var index: Int = 0
     private var size: Int = 0
     private val elements = arrayListOf<Element>()
@@ -134,10 +135,40 @@ fun KmlGl.createBuffer(type: Int): KmlGlBuffer {
 fun KmlGl.createArrayBuffer(): KmlGlBuffer = createBuffer(ARRAY_BUFFER)
 fun KmlGl.createElementArrayBuffer(): KmlGlBuffer = createBuffer(ELEMENT_ARRAY_BUFFER)
 
-fun KmlGl.drawArrays(layout: KmlGlVertexLayout, buffer: KmlGlBuffer, mode: Int, first: Int, count: Int) {
-    layout.use {
+inline fun KmlGlVertexLayout.drawArrays(buffer: KmlGlBuffer, mode: Int, first: Int, count: Int, uniforms: () -> Unit = {}) {
+    this.use {
         buffer.bind {
-            drawArrays(mode, first, count)
+            uniforms()
+            gl.drawArrays(mode, first, count)
         }
     }
+}
+
+class KmlGlTex(val gl: KmlGl, val texb: KmlIntBuffer) {
+    val tex get() = texb[0]
+
+    fun bind(unit: Int) = gl.run {
+        activeTexture(TEXTURE0 + unit)
+        bindTexture(TEXTURE_2D, tex)
+        texParameteri(TEXTURE_2D, TEXTURE_MIN_FILTER, LINEAR)
+        texParameteri(TEXTURE_2D, TEXTURE_MAG_FILTER, LINEAR)
+        texParameteri(TEXTURE_2D, TEXTURE_WRAP_S, CLAMP_TO_EDGE)
+        texParameteri(TEXTURE_2D, TEXTURE_WRAP_T, CLAMP_TO_EDGE)
+    }
+
+    fun upload(width: Int, height: Int, data: KmlBuffer, format: Int = gl.RGBA, type: Int = gl.UNSIGNED_BYTE): KmlGlTex {
+        bind(7)
+        gl.texImage2D(gl.TEXTURE_2D, 0, format, width, height, 0, format, type, data)
+        return this
+    }
+
+    fun dispose() {
+        gl.deleteTextures(1, texb)
+    }
+}
+
+fun KmlGl.createKmlTexture(): KmlGlTex {
+    val buf = KmlIntBuffer(1)
+    genTextures(1, buf)
+    return KmlGlTex(this, buf)
 }
