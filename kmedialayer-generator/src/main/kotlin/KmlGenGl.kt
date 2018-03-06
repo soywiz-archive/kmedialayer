@@ -841,7 +841,8 @@ object OpenglDesc {
             "type" to GlInt,
             "data" to GlNativeImageData,
             jsBody = "gl.texImage2D(target, level, internalformat, format, type, (data as KmlImgNativeImageData).img)",
-            jvmBody = "glTexImage2D(target, level, internalformat, data.width, data.height, 0, format, type, (data as BufferedImageKmlNativeImageData).buffer)"
+            jvmBody = "glTexImage2D(target, level, internalformat, data.width, data.height, 0, format, type, (data as BufferedImageKmlNativeImageData).buffer)",
+            androidBody = "TODO()"
         )
 
         function(GlVoid, FunctionName("glTexParameterf"), "target" to GlInt, "pname" to GlInt, "param" to GlFloat)

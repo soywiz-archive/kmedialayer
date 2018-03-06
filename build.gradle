@@ -1,5 +1,5 @@
 buildscript {
-	ext.projectVersion = '0.5.1-SNAPSHOT'
+	ext.projectVersion = '0.0.1'
 	ext.projectName = 'kmedialayer'
 	ext.projectGroup = 'com.soywiz'
 	ext.projectDesc = 'kmedialayer: Portable layer for multimedia applications'
@@ -23,17 +23,40 @@ buildscript {
 	dependencies {
 		classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlinVersion"
 		classpath "org.jetbrains.kotlin:kotlin-native-gradle-plugin:$kotlinNativeVersion"
-		classpath "gradle.plugin.com.soywiz:korlibs-build-gradle-plugin:0.1.6"
+		classpath "gradle.plugin.com.soywiz:korlibs-build-gradle-plugin:0.1.7"
+		classpath 'com.jfrog.bintray.gradle:gradle-bintray-plugin:1.7.3'
 	}
 }
 
 apply plugin: 'com.soywiz.korlibs-build-gradle-plugin'
 
 allprojects {
+	apply plugin: 'com.jfrog.bintray'
+	apply plugin: 'java'
+
 	tasks.withType(Test) {
 		testLogging {
 			showStandardStreams = true
 			events "passed", "failed"
+		}
+	}
+
+	// gradle bintrayUpload
+	if (rootProject.hasProperty('BINTRAY_USER') && rootProject.hasProperty('BINTRAY_KEY')) {
+		bintray {
+			user = rootProject.property('BINTRAY_USER')
+			key = rootProject.property('BINTRAY_KEY')
+			publications = ['MyPublication']
+			publish = true
+			override = true
+
+			pkg {
+				repo = "soywiz"
+				name = "kmedialayer"
+				userOrg = 'soywiz'
+				licenses = ['Apache-2.0']
+				vcsUrl = 'https://github.com/soywiz/kmedialayer.git'
+			}
 		}
 	}
 }
