@@ -78,12 +78,18 @@ object KmlBaseJvm : KmlBase() {
         }
         glfwSetCursorPosCallback(window, cursorPosCallback)
 
+        fun render() {
+            gl.startFrame()
+            listener.render(gl)
+            gl.endFrame()
+        }
+
         frameBufferSize = object : GLFWFramebufferSizeCallback() {
             override fun invoke(window: kotlin.Long, width: kotlin.Int, height: kotlin.Int) {
                 glfwMakeContextCurrent(window)
                 gl.viewport(0, 0, width, height)
                 listener.resized(width, height)
-                listener.render(gl)
+                render()
                 glfwSwapBuffers(window) // swap the color buffers
             }
         }
@@ -104,8 +110,7 @@ object KmlBaseJvm : KmlBase() {
 
         while (glfwWindowShouldClose(window) == 0) {
             glfwMakeContextCurrent(window)
-            listener.render(gl)
-
+            render()
             glfwSwapBuffers(window) // swap the color buffers
 
             // Poll for window events. The key callback above will only be

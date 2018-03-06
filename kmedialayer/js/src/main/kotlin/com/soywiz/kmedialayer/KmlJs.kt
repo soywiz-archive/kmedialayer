@@ -76,7 +76,9 @@ actual val Kml: KmlBase = object : KmlBase() {
 
         fun frame(ms: Double) {
             window.requestAnimationFrame(::frame)
+            gl.startFrame()
             listener.render(gl)
+            gl.endFrame()
         }
 
         frame(0.0)

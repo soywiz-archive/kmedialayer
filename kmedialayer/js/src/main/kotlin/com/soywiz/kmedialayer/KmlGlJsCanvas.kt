@@ -12,7 +12,7 @@ class KmlGlJsCanvas(val canvas: HTMLCanvasElement) : KmlGl() {
     val gl = canvas.getContext("webgl") as WebGLRenderingContext
     private val items = arrayOfNulls<Any>(8 * 1024)
     private val freeList = (1 until items.size).reversed().toMutableList()
-    private fun <T> T.alloc(): Int = run { val index = freeList.removeAt(freeList.size - 1); items[index] = this; (this.asDynamic()).id = index; index }
+    private fun <T> T.alloc(): Int = run { if (this.asDynamic().id === undefined) { val index = freeList.removeAt(freeList.size - 1); items[index] = this; (this.asDynamic()).id = index; }; this.asDynamic().id.unsafeCast<Int>() }
     private fun <T> Int.get(): T = items[this].unsafeCast<T>()
     private fun <T> Int.free(): T = run { val out = items[this].unsafeCast<T>(); freeList += this; items[this] = null; out }
 
@@ -74,6 +74,7 @@ class KmlGlJsCanvas(val canvas: HTMLCanvasElement) : KmlGl() {
     override fun getActiveUniform(program: Int, index: Int, bufSize: Int, length: KmlBuffer, size: KmlBuffer, type: KmlBuffer, name: KmlBuffer): Unit = run { val info = gl.getActiveUniform(program.get(), index)!!; size.arrayInt[0] = info.size; type.arrayInt[0] = info.type; name.putAsciiString(info.name); length.arrayInt[0] = info.size + 1 }
     override fun getAttachedShaders(program: Int, maxCount: Int, count: KmlBuffer, shaders: KmlBuffer): Unit = run { val ashaders = gl.getAttachedShaders(program.get())!!; count.arrayInt[0] = ashaders.size; for (n in 0 until min(maxCount, ashaders.size)) shaders.arrayInt[n] = ashaders[n].asDynamic().id.unsafeCast<Int>() }
     override fun getAttribLocation(program: Int, name: String): Int = gl.getAttribLocation(program.get(), name)
+    override fun getUniformLocation(program: Int, name: String): Int = run { val prg = program.get<WebGLProgram>().asDynamic(); if (prg.uniforms === undefined) prg.uniforms = js("({})"); if (prg.uniforms[name] === undefined) prg.uniforms[name] = gl.getUniformLocation(prg, name).alloc(); return prg.uniforms[name].unsafeCast<Int>() }
     override fun getBooleanv(pname: Int, data: KmlBuffer): Unit = run { data.arrayInt[0] = gl.getParameter(pname).unsafeCast<Int>() }
     override fun getBufferParameteriv(target: Int, pname: Int, params: KmlBuffer): Unit = run { params.arrayInt[0] = gl.getBufferParameter(target, pname).unsafeCast<Int>() }
     override fun getError(): Int = gl.getError()
@@ -102,7 +103,6 @@ class KmlGlJsCanvas(val canvas: HTMLCanvasElement) : KmlGl() {
     override fun getTexParameteriv(target: Int, pname: Int, params: KmlBuffer): Unit = run { params.arrayInt[0] = gl.getTexParameter(target, pname).unsafeCast<Int>() }
     override fun getUniformfv(program: Int, location: Int, params: KmlBuffer): Unit = run { params.arrayFloat[0] = gl.getUniform(program.get(), location.get()).unsafeCast<Float>() }
     override fun getUniformiv(program: Int, location: Int, params: KmlBuffer): Unit = run { params.arrayInt[0] = gl.getUniform(program.get(), location.get()).unsafeCast<Int>() }
-    override fun getUniformLocation(program: Int, name: String): Int = gl.getUniformLocation(program.get(), name).alloc()
     override fun getVertexAttribfv(index: Int, pname: Int, params: KmlBuffer): Unit = run { params.arrayFloat[0] = gl.getVertexAttrib(index, pname).unsafeCast<Float>() }
     override fun getVertexAttribiv(index: Int, pname: Int, params: KmlBuffer): Unit = run { params.arrayInt[0] = gl.getVertexAttrib(index, pname).unsafeCast<Int>() }
     override fun getVertexAttribPointerv(index: Int, pname: Int, pointer: KmlBuffer): Unit = run { pointer.arrayInt[0] = gl.getVertexAttrib(index, pname).unsafeCast<Int>() }

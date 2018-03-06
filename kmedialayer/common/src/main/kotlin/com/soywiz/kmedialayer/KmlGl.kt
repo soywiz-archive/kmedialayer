@@ -307,6 +307,8 @@ abstract class KmlGl {
     val MAX_RENDERBUFFER_SIZE: Int get() = 0x84E8
     val INVALID_FRAMEBUFFER_OPERATION: Int get() = 0x0506
 
+    open fun startFrame(): Unit = Unit
+    open fun endFrame(): Unit = Unit
     abstract fun activeTexture(texture: Int): Unit
     abstract fun attachShader(program: Int, shader: Int): Unit
     abstract fun bindAttribLocation(program: Int, index: Int, name: String): Unit
@@ -365,6 +367,7 @@ abstract class KmlGl {
     abstract fun getActiveUniform(program: Int, index: Int, bufSize: Int, length: KmlBuffer, size: KmlBuffer, type: KmlBuffer, name: KmlBuffer): Unit
     abstract fun getAttachedShaders(program: Int, maxCount: Int, count: KmlBuffer, shaders: KmlBuffer): Unit
     abstract fun getAttribLocation(program: Int, name: String): Int
+    abstract fun getUniformLocation(program: Int, name: String): Int
     abstract fun getBooleanv(pname: Int, data: KmlBuffer): Unit
     abstract fun getBufferParameteriv(target: Int, pname: Int, params: KmlBuffer): Unit
     abstract fun getError(): Int
@@ -383,7 +386,6 @@ abstract class KmlGl {
     abstract fun getTexParameteriv(target: Int, pname: Int, params: KmlBuffer): Unit
     abstract fun getUniformfv(program: Int, location: Int, params: KmlBuffer): Unit
     abstract fun getUniformiv(program: Int, location: Int, params: KmlBuffer): Unit
-    abstract fun getUniformLocation(program: Int, name: String): Int
     abstract fun getVertexAttribfv(index: Int, pname: Int, params: KmlBuffer): Unit
     abstract fun getVertexAttribiv(index: Int, pname: Int, params: KmlBuffer): Unit
     abstract fun getVertexAttribPointerv(index: Int, pname: Int, pointer: KmlBuffer): Unit

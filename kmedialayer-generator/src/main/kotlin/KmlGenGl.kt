@@ -23,6 +23,8 @@ object KmlGenGl {
         }
         //println("    }")
         println("")
+        println("    open fun startFrame(): Unit = Unit")
+        println("    open fun endFrame(): Unit = Unit")
         for (func in OpenglDesc.functions) {
             println("    abstract fun ${func.unprefixedName}(${func.args.joinToString(", ") { it.name + ": " + it.type.ktname }}): ${func.rettype.ktname}")
         }
@@ -88,7 +90,7 @@ object KmlGenGl {
         println("    val gl = canvas.getContext(\"webgl\") as WebGLRenderingContext")
         println("    private val items = arrayOfNulls<Any>(8 * 1024)")
         println("    private val freeList = (1 until items.size).reversed().toMutableList()")
-        println("    private fun <T> T.alloc(): Int = run { val index = freeList.removeAt(freeList.size - 1); items[index] = this; (this.asDynamic()).id = index; index }")
+        println("    private fun <T> T.alloc(): Int = run { if (this.asDynamic().id === undefined) { val index = freeList.removeAt(freeList.size - 1); items[index] = this; (this.asDynamic()).id = index; }; this.asDynamic().id.unsafeCast<Int>() }")
         println("    private fun <T> Int.get(): T = items[this].unsafeCast<T>()")
         println("    private fun <T> Int.free(): T = run { val out = items[this].unsafeCast<T>(); freeList += this; items[this] = null; out }")
         println("")
@@ -667,6 +669,8 @@ object OpenglDesc {
         fun getBase(type: String) = "run { data.array$type[0] = gl.getParameter(pname).unsafeCast<$type>() }"
 
         function(GlInt, FunctionName("glGetAttribLocation"), "program" to GlProgram, "name" to GlString)
+        function(GlUniformLocation, FunctionName("glGetUniformLocation"), "program" to GlProgram, "name" to GlString, jsBody = "run { val prg = program.get<WebGLProgram>().asDynamic(); if (prg.uniforms === undefined) prg.uniforms = js(\"({})\"); if (prg.uniforms[name] === undefined) prg.uniforms[name] = gl.getUniformLocation(prg, name).alloc(); return prg.uniforms[name].unsafeCast<Int>() }")
+
         function(GlVoid, FunctionName("glGetBooleanv"), "pname" to GlInt, "data" to GlBoolPtr, jsBody = getBase("Int"))
         function(GlVoid, FunctionName("glGetBufferParameteriv"), "target" to GlInt, "pname" to GlInt, "params" to GlIntPtr, jsBody = "run { params.arrayInt[0] = gl.getBufferParameter(target, pname).unsafeCast<Int>() }")
         function(GlInt, FunctionName("glGetError"))
@@ -745,7 +749,6 @@ object OpenglDesc {
         function(GlVoid, FunctionName("glGetTexParameteriv"), "target" to GlInt, "pname" to GlInt, "params" to GlIntPtr, jsBody = "run { params.arrayInt[0] = gl.getTexParameter(target, pname).unsafeCast<Int>() }")
         function(GlVoid, FunctionName("glGetUniformfv"), "program" to GlProgram, "location" to GlUniformLocation, "params" to GlFloatPtr, jsBody = "run { params.arrayFloat[0] = gl.getUniform(program.get(), location.get()).unsafeCast<Float>() }")
         function(GlVoid, FunctionName("glGetUniformiv"), "program" to GlProgram, "location" to GlUniformLocation, "params" to GlIntPtr, jsBody = "run { params.arrayInt[0] = gl.getUniform(program.get(), location.get()).unsafeCast<Int>() }")
-        function(GlUniformLocation, FunctionName("glGetUniformLocation"), "program" to GlProgram, "name" to GlString)
         function(GlVoid, FunctionName("glGetVertexAttribfv"), "index" to GlInt, "pname" to GlInt, "params" to GlFloatPtr, jsBody = "run { params.arrayFloat[0] = gl.getVertexAttrib(index, pname).unsafeCast<Float>() }")
         function(GlVoid, FunctionName("glGetVertexAttribiv"), "index" to GlInt, "pname" to GlInt, "params" to GlIntPtr, jsBody = "run { params.arrayInt[0] = gl.getVertexAttrib(index, pname).unsafeCast<Int>() }")
         function(GlVoid, FunctionName("glGetVertexAttribPointerv"), "index" to GlInt, "pname" to GlInt, "pointer" to GlVoidPtr, jsBody = "run { pointer.arrayInt[0] = gl.getVertexAttrib(index, pname).unsafeCast<Int>() }", androidBody = "TODO()")

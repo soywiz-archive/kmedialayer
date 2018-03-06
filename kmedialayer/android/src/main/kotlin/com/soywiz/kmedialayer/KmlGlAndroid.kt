@@ -65,6 +65,7 @@ class KmlGlAndroid : KmlGl() {
     override fun getActiveUniform(program: Int, index: Int, bufSize: Int, length: KmlBuffer, size: KmlBuffer, type: KmlBuffer, name: KmlBuffer): Unit = run { val alen = IntArray(1) ; val asize = IntArray(1) ; val atype = IntArray(1) ; val aname = ByteArray(name.baseBuffer.size); glGetActiveUniform(program, index, bufSize, alen, 0, asize, 0, atype, 0, aname, 0); length.asIntBuffer()[0] = alen[0]; size.asIntBuffer()[0] = asize[0]; type.asIntBuffer()[0] = atype[0]; name.putAsciiString(aname.toString(Charsets.US_ASCII)) }
     override fun getAttachedShaders(program: Int, maxCount: Int, count: KmlBuffer, shaders: KmlBuffer): Unit = glGetAttachedShaders(program, maxCount, count.nioIntBuffer, shaders.nioIntBuffer)
     override fun getAttribLocation(program: Int, name: String): Int = glGetAttribLocation(program, name)
+    override fun getUniformLocation(program: Int, name: String): Int = glGetUniformLocation(program, name)
     override fun getBooleanv(pname: Int, data: KmlBuffer): Unit = glGetBooleanv(pname, data.nioIntBuffer)
     override fun getBufferParameteriv(target: Int, pname: Int, params: KmlBuffer): Unit = glGetBufferParameteriv(target, pname, params.nioIntBuffer)
     override fun getError(): Int = glGetError()
@@ -83,7 +84,6 @@ class KmlGlAndroid : KmlGl() {
     override fun getTexParameteriv(target: Int, pname: Int, params: KmlBuffer): Unit = glGetTexParameteriv(target, pname, params.nioIntBuffer)
     override fun getUniformfv(program: Int, location: Int, params: KmlBuffer): Unit = glGetUniformfv(program, location, params.nioFloatBuffer)
     override fun getUniformiv(program: Int, location: Int, params: KmlBuffer): Unit = glGetUniformiv(program, location, params.nioIntBuffer)
-    override fun getUniformLocation(program: Int, name: String): Int = glGetUniformLocation(program, name)
     override fun getVertexAttribfv(index: Int, pname: Int, params: KmlBuffer): Unit = glGetVertexAttribfv(index, pname, params.nioFloatBuffer)
     override fun getVertexAttribiv(index: Int, pname: Int, params: KmlBuffer): Unit = glGetVertexAttribiv(index, pname, params.nioIntBuffer)
     override fun getVertexAttribPointerv(index: Int, pname: Int, pointer: KmlBuffer): Unit = TODO()
