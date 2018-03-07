@@ -4,7 +4,8 @@ import com.soywiz.kmedialayer.*
 import com.soywiz.kmedialayer.scene.geom.*
 
 open class Scene {
-    val root = ViewContainer()
+    val root = SceneContainer(this)
+
     lateinit var gl: KmlGl
 
     open suspend fun init() {
@@ -14,13 +15,23 @@ open class Scene {
         root.render(rc)
     }
 
-    fun update(dt: Int) {
-    }
 
     open fun onKeyDown(keyCode: Int) {
     }
 
     open fun onKeyUp(keyCode: Int) {
+    }
+
+    fun update(ms: Int) {
+        update(root, ms.toDouble())
+    }
+
+    fun update(view: View, ms: Double) {
+        val ams = if (view.speed == 1.0) ms else view.speed * ms
+        if (view is ViewContainer) {
+            for (child in view.children) update(child, ams)
+        }
+        view.actions?.update(ams)
     }
 }
 
@@ -43,13 +54,19 @@ class ViewTransform {
     }
 }
 
+open class SceneContainer(val rootScene: Scene) : ViewContainer() {
+}
+
 open class View {
     var parent: ViewContainer? = null
+    val root: ViewContainer? get() = parent?.root ?: this as? ViewContainer?
+    val scene: Scene? get() = (root as? SceneContainer?)?.rootScene
     var validParents = false
     var validChildren = false
 
     protected val _transform = ViewTransform()
     protected val _globalMatrix = Matrix2d()
+    var actions: ViewActionActionRunner? = null
 
     protected open fun recompute() {
         if (validParents && validChildren) return
@@ -62,24 +79,41 @@ open class View {
         _globalMatrix.premultiply(_transform.matrix)
     }
 
-    val localMatrix: Matrix2d get() {
-        recompute()
-        return _transform.matrix
+    val localMatrix: Matrix2d
+        get() {
+            recompute()
+            return _transform.matrix
+        }
+
+    val localTransform: Matrix2d.Transform
+        get() {
+            recompute()
+            return _transform.transform
+        }
+
+    val globalMatrix: Matrix2d
+        get() {
+            recompute()
+            return _globalMatrix
+        }
+
+    private val t get() = _transform.transform
+    var x; get() = t.x; set(value) = run { invalidate(); t.x = value }
+    var y; get() = t.y; set(value) = run { invalidate(); t.y = value }
+    var scaleX; get() = t.scaleX; set(value) = run { invalidate(); t.scaleX = value }
+    var scaleY; get() = t.scaleY; set(value) = run { invalidate(); t.scaleY = value }
+    var rotation; get() = t.rotation; set(value) = run { invalidate(); t.rotation = value }
+    var rotationDegrees; get() = t.rotationDegrees; set(value) = run { invalidate(); t.rotationDegrees = value }
+
+    var speed = 1.0
+    var alpha = 1.0
+
+    fun act(action: ViewAction) {
+        this.actions?.finish()
+        this.actions = ViewActionActionRunner(action.createRunner(this))
     }
 
-    val globalMatrix: Matrix2d get() {
-        recompute()
-        return _globalMatrix
-    }
-
-    var x get() = _transform.transform.x; set(value) { invalidate(); _transform.transform.x = value }
-    var y get() = _transform.transform.y; set(value) { invalidate(); _transform.transform.y = value }
-    var scaleX get() = _transform.transform.scaleX; set(value) { invalidate(); _transform.transform.scaleX = value }
-    var scaleY get() = _transform.transform.scaleY; set(value) { invalidate(); _transform.transform.scaleY = value }
-    var rotation get() = _transform.transform.rotation; set(value) { invalidate(); _transform.transform.rotation = value }
-    var rotationDegrees get() = _transform.transform.rotationDegrees; set(value) { invalidate(); _transform.transform.rotationDegrees = value }
-    var speed = 1f
-    var alpha = 1f
+    fun act(callback: ActionListBuilder.() -> Unit) = act(buildAction(callback))
 
     fun invalidate() {
         invalidateParent()
@@ -102,12 +136,13 @@ open class View {
 }
 
 open class ViewContainer : View() {
-    private val children = arrayListOf<View>()
+    private val _children = arrayListOf<View>()
+    val children: List<View> get() = _children
 
     fun removeChild(view: View) {
         if (view.parent == this) {
             view.parent = null
-            children.remove(view)
+            _children.remove(view)
         }
     }
 
@@ -115,11 +150,11 @@ open class ViewContainer : View() {
         if (view == this) throw RuntimeException("Can't add view to itself!")
         view.removeFromParent()
         view.parent = this
-        this.children += view
+        this._children += view
     }
 
     override fun render(rc: SceneRenderContext) {
-        for (child in children) child.render(rc)
+        for (child in _children) child.render(rc)
     }
 
     operator fun plusAssign(view: View) {
@@ -128,7 +163,7 @@ open class ViewContainer : View() {
 
     override fun invalidateChildren() {
         validChildren = false
-        for (child in children) {
+        for (child in _children) {
             if (child.validChildren) child.invalidateChildren()
         }
     }
@@ -152,7 +187,17 @@ open class Image(var tex: SceneTexture) : View() {
 
     override fun render(rc: SceneRenderContext) {
         recompute()
-        rc.batcher.addQuad(p0.x.toFloat(), p0.y.toFloat(), p1.x.toFloat(), p1.y.toFloat(), p2.x.toFloat(), p2.y.toFloat(), p3.x.toFloat(), p3.y.toFloat(), tex)
+        rc.batcher.addQuad(
+            p0.x.toFloat(),
+            p0.y.toFloat(),
+            p1.x.toFloat(),
+            p1.y.toFloat(),
+            p2.x.toFloat(),
+            p2.y.toFloat(),
+            p3.x.toFloat(),
+            p3.y.toFloat(),
+            tex
+        )
     }
 }
 

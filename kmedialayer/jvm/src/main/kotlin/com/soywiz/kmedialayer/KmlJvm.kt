@@ -139,6 +139,8 @@ object KmlBaseJvm : KmlBase() {
     override suspend fun delay(ms: Int): Unit = suspendCoroutine { c ->
         Timers.add(ms) { c.resume(Unit) }
     }
+
+    override fun currentTimeMillis(): Double = System.currentTimeMillis().toDouble()
 }
 
 actual val Kml: KmlBase = KmlBaseJvm

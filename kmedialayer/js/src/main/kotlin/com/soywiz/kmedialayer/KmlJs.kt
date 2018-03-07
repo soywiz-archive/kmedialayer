@@ -7,6 +7,7 @@ import org.w3c.dom.url.*
 import org.w3c.files.*
 import kotlin.browser.*
 import kotlin.coroutines.experimental.*
+import kotlin.js.*
 
 fun launch(context: CoroutineContext = EmptyCoroutineContext, callback: suspend () -> Unit) {
     callback.startCoroutine(object : Continuation<Unit> {
@@ -16,7 +17,7 @@ fun launch(context: CoroutineContext = EmptyCoroutineContext, callback: suspend 
     })
 }
 
-actual val Kml: KmlBase = object : KmlBase() {
+object KmlBaseJs : KmlBase() {
     override fun application(windowConfig: WindowConfig, listener: KMLWindowListener) = launch {
         document.title = windowConfig.title
         var mustAppendCanvas = false
@@ -107,7 +108,11 @@ actual val Kml: KmlBase = object : KmlBase() {
     override suspend fun delay(ms: Int): Unit = suspendCoroutine { c ->
         window.setTimeout({ c.resume(Unit) }, ms)
     }
+
+    override fun currentTimeMillis(): Double = Date.now()
 }
+
+actual val Kml: KmlBase = KmlBaseJs
 
 class KmlImgNativeImageData(val img: HTMLImageElement) : KmlNativeImageData {
     override val width get() = img.width

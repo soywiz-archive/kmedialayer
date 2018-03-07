@@ -12,7 +12,15 @@ fun SceneApplication(windowConfig: WindowConfig = WindowConfig(), sceneGen: () -
             scene = sceneGen().apply { this.gl = gl; init() }
         }
 
+        private var lastTime = 0.0
         override fun render(gl: KmlGl) {
+            if (lastTime == 0.0) lastTime = Kml.currentTimeMillis()
+            val now = Kml.currentTimeMillis()
+            if (now != lastTime) {
+                scene.update((now - lastTime).toInt())
+                lastTime = now
+            }
+
             super.render(gl)
             scene.render(renderContext)
             renderContext.flush()

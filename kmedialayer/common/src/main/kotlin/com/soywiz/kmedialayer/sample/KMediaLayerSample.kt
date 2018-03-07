@@ -3,6 +3,7 @@ package com.soywiz.kmedialayer.sample
 import com.soywiz.kmedialayer.*
 import com.soywiz.kmedialayer.util.*
 
+/*
 object KMediaLayerSample {
     fun main(args: Array<String>) {
         Kml.application(
@@ -117,3 +118,4 @@ object KMediaLayerSample {
         )
     }
 }
+*/

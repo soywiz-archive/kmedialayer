@@ -23,6 +23,8 @@ abstract class KmlBase {
         })
     }
 
+    open fun currentTimeMillis(): Double = 0.0
+
     open suspend fun delay(ms: Int): Unit {
         TODO("KmlBase.delay()")
     }

@@ -28,7 +28,18 @@ object KMediaLayerSample2 {
                 }
 
                 override fun onKeyDown(keyCode: Int) {
-                    image.x += 10f
+                    image.act {
+                        moveBy(32.0, 0.0)
+                        //repeat(2) {
+                        //    moveBy(0.0, 10.0)
+                        //}
+                        moveBy(0.0, 32.0)
+                        moveBy(0.0, 32.0)
+                        parallel {
+                            show()
+                            moveBy(32.0, 32.0)
+                        }
+                    }
                     container.rotationDegrees += 2.0
                 }
             }
