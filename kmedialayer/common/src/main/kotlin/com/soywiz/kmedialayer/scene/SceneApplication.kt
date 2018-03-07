@@ -8,7 +8,7 @@ fun SceneApplication(windowConfig: WindowConfig = WindowConfig(), sceneGen: () -
         lateinit var renderContext: SceneRenderContext
 
         override suspend fun init(gl: KmlGl) = gl.run {
-            renderContext = SceneRenderContext(SceneBatcher(gl))
+            renderContext = SceneRenderContext(SceneBatcher(gl, windowConfig.width, windowConfig.height))
             scene = sceneGen().apply { this.gl = gl; init() }
         }
 
@@ -44,6 +44,7 @@ fun SceneApplication(windowConfig: WindowConfig = WindowConfig(), sceneGen: () -
 
         override fun resized(width: Int, height: Int) {
             super.resized(width, height)
+            KmlGlUtil.ortho(width, height, 0f, 1f, renderContext.batcher.ortho)
         }
     })
 }

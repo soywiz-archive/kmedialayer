@@ -2,7 +2,7 @@ package com.soywiz.kmedialayer.scene
 
 import com.soywiz.kmedialayer.*
 
-class SceneBatcher(val gl: KmlGl) {
+class SceneBatcher(val gl: KmlGl, initialWidth: Int, initialHeight: Int) {
     val QUADS = 1024
     val vertices = KmlFloatBuffer(QUADS * 4 * 4)
     val indices = KmlShortBuffer(QUADS * 6)
@@ -10,7 +10,7 @@ class SceneBatcher(val gl: KmlGl) {
     var vpos = 0
     var ipos = 0
     private var currentTex: KmlGlTex? = null
-    val ortho = KmlGlUtil.ortho(640, 480)
+    val ortho = KmlGlUtil.ortho(initialWidth, initialHeight)
     val program = gl.createProgram(
         vertex = """
                             uniform mat4 uprojection;
