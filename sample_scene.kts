@@ -7,13 +7,3 @@
 @file:MavenRepository("soywiz-bintray","https://dl.bintray.com/soywiz/soywiz/" )
 
 import com.soywiz.kmedialayer.*
-import com.soywiz.kmedialayer.scene.*
-
-println("a")
-SceneApplication { object : Scene() {
-    override suspend fun init() {
-        root += Image(texture("mini.png")).apply {
-        }
-    }
-} }
-println("b")

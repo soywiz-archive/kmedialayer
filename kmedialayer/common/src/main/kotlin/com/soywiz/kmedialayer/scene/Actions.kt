@@ -54,6 +54,7 @@ interface ViewAction {
             override fun update(ratio: Double) {
                 view.x = Interpolator.interpolate(ratio, sx, dx)
                 view.y = Interpolator.interpolate(ratio, sy, dy)
+                println("View: ${view.x}, ${view.y} : $ratio")
             }
         }
     }
@@ -88,7 +89,7 @@ interface ViewAction {
                 }
                 val action = tasks[min(tasks.size - 1, taskIndex)]
                 action.update(ratio)
-                println("UPDATE: ${tasks.size}, $ratio, $taskIndex, $ratioInTask")
+                //println("UPDATE: ${tasks.size}, $ratio, $taskIndex, $ratioInTask")
             }
         }
     }
