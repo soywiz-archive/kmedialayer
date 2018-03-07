@@ -9,10 +9,6 @@ data class WindowConfig(
 )
 
 abstract class KmlBase {
-    open fun application(windowConfig: WindowConfig, listener: KMLWindowListener) {
-        TODO("KmlBase.application()")
-    }
-
     open fun launch(context: CoroutineContext = EmptyCoroutineContext, callback: suspend () -> Unit) {
         callback.startCoroutine(object : Continuation<Unit> {
             override val context: CoroutineContext = context
@@ -23,9 +19,14 @@ abstract class KmlBase {
         })
     }
 
-    open fun currentTimeMillis(): Double = 0.0
+    open fun application(windowConfig: WindowConfig, listener: KMLWindowListener) {
+        TODO("KmlBase.application()")
+    }
 
-    open suspend fun delay(ms: Int): Unit {
+    open fun currentTimeMillis(): Double = TODO("KmlBase.currentTimeMillis")
+    open suspend fun delay(ms: Int): Unit = TODO("KmlBase.delay()")
+
+    open fun enqueue(task: () -> Unit): Unit {
         TODO("KmlBase.delay()")
     }
 
@@ -35,6 +36,14 @@ abstract class KmlBase {
 
     open suspend fun decodeImage(data: ByteArray): KmlNativeImageData {
         TODO("KmlBase.decodeImage(ByteArray)")
+    }
+
+    open suspend fun loadFileBytes(path: String, range: LongRange? = null): ByteArray {
+        TODO("KmlBase.loadFileBytes")
+    }
+
+    open suspend fun writeFileBytes(path: String, data: ByteArray, offset: Long? = null): Unit {
+        TODO("KmlBase.writeFileBytes")
     }
 }
 

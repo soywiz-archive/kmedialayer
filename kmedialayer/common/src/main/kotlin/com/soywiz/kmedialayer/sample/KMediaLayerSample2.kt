@@ -10,7 +10,10 @@ object KMediaLayerSample2 {
                 lateinit var container: ViewContainer
 
                 override suspend fun init() {
+                    //val data = Kml.loadFileBytes("mini.png")
                     val tex = texture("mini.png")
+                    //val tex = texture(data)
+                    //println(data.size)
                     root += ViewContainer().apply {
                         container = this
                         scaleX = 2.0
@@ -41,6 +44,16 @@ object KMediaLayerSample2 {
                         }
                     }
                     container.rotationDegrees += 2.0
+                }
+
+                override fun onMouseMove(x: Int, y: Int) {
+                    //println("$x,$y")
+                    if (image.viewInGlobal(x, y) != null) {
+                        image.alpha = 0.5
+                    } else {
+                        image.alpha = 1.0
+                    }
+                    println(root.viewInGlobal(x, y))
                 }
             }
         }

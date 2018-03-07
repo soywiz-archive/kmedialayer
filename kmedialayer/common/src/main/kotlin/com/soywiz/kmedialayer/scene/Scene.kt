@@ -2,6 +2,7 @@ package com.soywiz.kmedialayer.scene
 
 import com.soywiz.kmedialayer.*
 import com.soywiz.kmedialayer.scene.geom.*
+import kotlin.math.*
 
 open class Scene {
     val root = SceneContainer(this)
@@ -20,6 +21,15 @@ open class Scene {
     }
 
     open fun onKeyUp(keyCode: Int) {
+    }
+
+    open fun onMouseMove(x: Int, y: Int) {
+    }
+
+    open fun onMouseDown(button: Int) {
+    }
+
+    open fun onMouseUp(button: Int) {
     }
 
     fun update(ms: Int) {
@@ -66,6 +76,8 @@ open class View {
 
     protected val _transform = ViewTransform()
     protected val _globalMatrix = Matrix2d()
+    protected var _invGlobalMatrixValid = false
+    protected val _invGlobalMatrix = Matrix2d()
     var actions: ViewActionActionRunner? = null
 
     protected open fun recompute() {
@@ -77,6 +89,7 @@ open class View {
         _globalMatrix.setToIdentity()
         _globalMatrix.premultiply(pgm)
         _globalMatrix.premultiply(_transform.matrix)
+        _invGlobalMatrixValid = false
     }
 
     val localMatrix: Matrix2d
@@ -96,6 +109,22 @@ open class View {
             recompute()
             return _globalMatrix
         }
+
+    val invGlobalMatrix: Matrix2d
+        get() {
+            recompute()
+            if (!_invGlobalMatrixValid) {
+                _invGlobalMatrix.setToInverse(_globalMatrix)
+            }
+            return _invGlobalMatrix
+        }
+
+    fun globalToLocal(p: Point, out: Point = Point()): Point = out.setToTransform(invGlobalMatrix, p)
+    fun localToGlobal(p: Point, out: Point = Point()): Point = out.setToTransform(globalMatrix, p)
+
+    open fun viewInGlobal(x: Int, y: Int): View? {
+        return null
+    }
 
     private val t get() = _transform.transform
     var x; get() = t.x; set(value) = run { invalidate(); t.x = value }
@@ -151,6 +180,7 @@ open class ViewContainer : View() {
         view.removeFromParent()
         view.parent = this
         this._children += view
+        view.invalidate()
     }
 
     override fun render(rc: SceneRenderContext) {
@@ -167,6 +197,11 @@ open class ViewContainer : View() {
             if (child.validChildren) child.invalidateChildren()
         }
     }
+
+    override fun viewInGlobal(x: Int, y: Int): View? {
+        for (child in _children) return child.viewInGlobal(x, y) ?: continue
+        return null
+    }
 }
 
 open class Image(var tex: SceneTexture) : View() {
@@ -175,7 +210,7 @@ open class Image(var tex: SceneTexture) : View() {
     var p2 = Point()
     var p3 = Point()
 
-    protected override fun recompute() {
+    override fun recompute() {
         if (validParents && validChildren) return
         super.recompute()
         val gm = _globalMatrix
@@ -183,6 +218,15 @@ open class Image(var tex: SceneTexture) : View() {
         p1.setToTransform(gm, tex.widthPixels.toDouble(), 0.0)
         p2.setToTransform(gm, 0.0, tex.heightPixels.toDouble())
         p3.setToTransform(gm, tex.widthPixels.toDouble(), tex.heightPixels.toDouble())
+    }
+
+    override fun viewInGlobal(x: Int, y: Int): View? {
+        recompute()
+        val minX = min(min(min(p0.x, p1.x), p2.x), p3.x)
+        val maxX = max(max(max(p0.x, p1.x), p2.x), p3.x)
+        val minY = min(min(min(p0.y, p1.y), p2.y), p3.y)
+        val maxY = max(max(max(p0.y, p1.y), p2.y), p3.y)
+        return if ((x in minX..maxX) && (y in minY..maxY)) this else null
     }
 
     override fun render(rc: SceneRenderContext) {
@@ -196,9 +240,11 @@ open class Image(var tex: SceneTexture) : View() {
             p2.y.toFloat(),
             p3.x.toFloat(),
             p3.y.toFloat(),
-            tex
+            tex,
+            alpha.toFloat()
         )
     }
 }
 
 suspend fun Scene.texture(name: String) = SceneTexture(gl.createKmlTexture().upload(Kml.decodeImage(name)))
+suspend fun Scene.texture(data: ByteArray) = SceneTexture(gl.createKmlTexture().upload(Kml.decodeImage(data)))

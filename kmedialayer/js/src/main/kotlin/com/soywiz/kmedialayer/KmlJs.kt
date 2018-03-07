@@ -109,6 +109,11 @@ object KmlBaseJs : KmlBase() {
         window.setTimeout({ c.resume(Unit) }, ms)
     }
 
+    override fun enqueue(task: () -> Unit) {
+        // @TODO: Set immediate o direct execution!
+        window.setTimeout({ task() }, 0)
+    }
+
     override fun currentTimeMillis(): Double = Date.now()
 }
 

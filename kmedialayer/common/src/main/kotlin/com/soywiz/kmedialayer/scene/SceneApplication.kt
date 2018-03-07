@@ -38,8 +38,15 @@ fun SceneApplication(windowConfig: WindowConfig = WindowConfig(), sceneGen: () -
             super.gamepadUpdate(button, pressed, ratio)
         }
 
+        private var lastMouseX: Int = -1000
+        private var lastMouseY: Int = -1000
         override fun mouseUpdate(x: Int, y: Int, buttons: Int) {
             super.mouseUpdate(x, y, buttons)
+            if (lastMouseX != x || lastMouseY != y) {
+                lastMouseX = x
+                lastMouseY = y
+                scene.onMouseMove(x, y)
+            }
         }
 
         override fun resized(width: Int, height: Int) {

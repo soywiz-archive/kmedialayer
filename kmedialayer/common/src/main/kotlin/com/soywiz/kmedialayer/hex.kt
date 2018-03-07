@@ -1,4 +1,4 @@
-package com.soywiz.kmedialayer.util
+package com.soywiz.kmedialayer
 
 private fun unhex(c: Char): Int = when (c) {
     in '0'..'9' -> 0 + (c - '0')
@@ -7,7 +7,7 @@ private fun unhex(c: Char): Int = when (c) {
     else -> throw RuntimeException("Illegal HEX character $c")
 }
 
-fun unhex(str: String): ByteArray {
+internal fun unhex(str: String): ByteArray {
     val out = ByteArray(str.length / 2)
     var m = 0
     for (n in 0 until out.size) {

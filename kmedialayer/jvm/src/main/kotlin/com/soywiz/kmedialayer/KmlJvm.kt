@@ -140,11 +140,30 @@ object KmlBaseJvm : KmlBase() {
         Timers.add(ms) { c.resume(Unit) }
     }
 
+    override fun enqueue(task: () -> Unit) {
+        Timers.add(task)
+    }
+
+    override suspend fun loadFileBytes(path: String, range: LongRange?): ByteArray {
+        val raf = RandomAccessFile(File(path), "r")
+        if (range != null) raf.seek(range.start)
+        val len = range?.let { (it.endInclusive - it.start) - 1 } ?: (raf.length() - raf.filePointer)
+        val ba = ByteArray(len.toInt())
+        val outSize = raf.read(ba)
+        return ba.copyOf(outSize)
+    }
+
+    override suspend fun writeFileBytes(path: String, data: ByteArray, offset: Long?) {
+        val raf = RandomAccessFile(File(path), "rw")
+        if (offset != null) raf.seek(offset)
+        raf.write(data)
+        if (offset == null) raf.setLength(raf.filePointer)
+    }
+
     override fun currentTimeMillis(): Double = System.currentTimeMillis().toDouble()
 }
 
 actual val Kml: KmlBase = KmlBaseJvm
-
 
 object Timers {
     private class Timer(val start: Long, val callback: () -> Unit)
@@ -152,8 +171,15 @@ object Timers {
     private val tempTimers = arrayListOf<Timer>()
     private val timers = arrayListOf<Timer>()
 
+    private val tempTasks = arrayListOf<() -> Unit>()
+    private val tasks = arrayListOf<() -> Unit>()
+
     fun add(ms: Int, callback: () -> Unit) {
         timers += Timer(System.currentTimeMillis() + ms, callback)
+    }
+
+    fun add(callback: () -> Unit) {
+        tasks += callback
     }
 
     fun check() {
@@ -166,6 +192,13 @@ object Timers {
                 timer.callback()
                 timers.remove(timer)
             }
+        }
+        // Queued tasks
+        tempTasks.clear()
+        tempTasks.addAll(tasks)
+        tasks.clear()
+        for (task in tempTasks) {
+            task()
         }
     }
 }
@@ -205,6 +238,7 @@ class BufferedImageKmlNativeImageData(val buffered: BufferedImage) : KmlNativeIm
     override val width: Int get() = buffered.width
     override val height: Int get() = buffered.height
     val bytes = (buffered.raster.dataBuffer as DataBufferByte).data
+
     init {
         //for (y in 0 until 32) {
         //    val rowSize = 32 * 4
@@ -223,6 +257,7 @@ class BufferedImageKmlNativeImageData(val buffered: BufferedImage) : KmlNativeIm
             bytes[n + 3] = v0
         }
     }
+
     val buffer = ByteBuffer.allocateDirect(bytes.size).apply {
         clear()
         put(bytes)
