@@ -116,9 +116,9 @@ class KmlGlBuffer(val gl: KmlGl, val type: Int, val bufs: KmlIntBuffer) {
         }
     }
 
-    fun setData(data: KmlBuffer): KmlGlBuffer {
+    fun setData(data: KmlBuffer, size: Int = data.baseBuffer.size): KmlGlBuffer {
         bind()
-        gl.bufferData(type, data.baseBuffer.size, data, gl.STATIC_DRAW)
+        gl.bufferData(type, size, data, gl.STATIC_DRAW)
         return this
     }
 
