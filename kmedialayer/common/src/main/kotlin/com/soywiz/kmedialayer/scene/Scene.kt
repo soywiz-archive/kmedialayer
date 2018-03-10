@@ -2,7 +2,6 @@ package com.soywiz.kmedialayer.scene
 
 import com.soywiz.kmedialayer.*
 import com.soywiz.kmedialayer.scene.geom.*
-import kotlin.math.*
 
 open class Scene {
     val root = SceneContainer(this)
