@@ -3,6 +3,7 @@ package com.soywiz.kmedialayer.sample
 import com.soywiz.kmedialayer.*
 import com.soywiz.kmedialayer.scene.*
 import com.soywiz.kmedialayer.scene.components.*
+import com.soywiz.kmedialayer.scene.geom.*
 
 object KMediaLayerSample2 {
     fun main(args: Array<String>) {
@@ -10,6 +11,8 @@ object KMediaLayerSample2 {
             object : Scene() {
                 lateinit var image: Image
                 lateinit var container: ViewContainer
+
+                val animationQueue = JobQueue()
 
                 override suspend fun init() {
                     //val data = Kml.loadFileBytes("mini.png")
@@ -41,32 +44,26 @@ object KMediaLayerSample2 {
                                 alpha = 0.5
                             }
                             click {
-                                println("CLICKED!")
+                                launch {
+                                    parallel({
+                                        moveBy(100.0, 100.0, easing = Easing.QUADRATIC_EASE_IN_OUT)
+                                    }, {
+                                        hide()
+                                    })
+                                    show()
+                                }
+                                Unit
+                                //println("CLICKED!")
                             }
                         }
-                    }
-                }
-
-                override fun onKeyDown(key: Key) {
-                    println("key: $key")
-                    when (key) {
-                        Key.RIGHT -> {
-                            image.act {
-                                moveBy(32.0, 0.0)
-                                //repeat(2) {
-                                //    moveBy(0.0, 10.0)
-                                //}
-                                moveBy(0.0, 32.0)
-                                moveBy(0.0, 32.0)
-                                parallel {
-                                    show()
-                                    moveBy(32.0, 32.0)
+                        keys {
+                            down(Key.RIGHT) {
+                                animationQueue.cancel().invoke {
+                                    moveBy(100.0, 0.0)
                                 }
                             }
-                            container.rotationDegrees += 2.0
                         }
                     }
-                    //println(keyCode)
                 }
 
                 /*

@@ -33,10 +33,12 @@ class SceneApplication(v: Boolean, val windowConfig: WindowConfig = WindowConfig
     }
 
     override fun keyUpdate(key: Key, pressed: Boolean) {
-        if (pressed) {
-            scene.onKeyDown(key)
-        } else {
-            scene.onKeyUp(key)
+        scene.apply {
+            if (pressed) {
+                keyDown(key)
+            } else {
+                keyUp(key)
+            }
         }
     }
 

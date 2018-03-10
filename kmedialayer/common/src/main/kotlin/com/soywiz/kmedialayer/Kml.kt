@@ -1,5 +1,6 @@
 package com.soywiz.kmedialayer
 
+import com.soywiz.kmedialayer.scene.util.*
 import kotlin.coroutines.experimental.*
 
 data class WindowConfig(
@@ -8,19 +9,133 @@ data class WindowConfig(
     val title: String = "KMediaLayer"
 )
 
-fun launch(context: CoroutineContext = EmptyCoroutineContext, callback: suspend () -> Unit) {
-    Kml.launch(context, callback)
+open class CancelException : RuntimeException()
+
+interface Job<T> {
+    fun cancel(exception: CancelException = CancelException())
+
+    suspend fun await(): T
+}
+
+class CancellationToken(val cancel: Signal<Throwable> = Signal()) : CoroutineContext.Element {
+    override val key: CoroutineContext.Key<*> = KEY
+
+    object KEY : CoroutineContext.Key<CancellationToken>
+}
+
+public suspend inline fun <T> suspendCoroutineCancellable(crossinline block: (Continuation<T>, cancel: Signal<Throwable>) -> Unit): T {
+    return suspendCoroutine<T> { c ->
+        block(c, c.context[CancellationToken.KEY]!!.cancel)
+    }
+}
+
+class JobQueue(val context: CoroutineContext = EmptyCoroutineContext) {
+    val tasks = arrayListOf<suspend () -> Unit>()
+    var running = false
+    private var currentJob: Job<Unit>? = null
+
+    private suspend fun run() {
+        running = true
+        try {
+
+            while (tasks.isNotEmpty()) {
+                val task = tasks.removeAt(0)
+                val job = launch { task() }
+                currentJob = job
+                job.await()
+                currentJob = null
+            }
+        } finally {
+            currentJob = null
+            running = false
+        }
+    }
+
+    fun cancel(): JobQueue {
+        currentJob?.cancel()
+        return this
+    }
+
+    operator fun invoke(callback: suspend () -> Unit) {
+        tasks += callback
+        if (!running) launch { run() }
+    }
+}
+
+class Deferred<T>(bcontext: CoroutineContext, val cancellationToken: CancellationToken) : Continuation<T>, Job<T> {
+    companion object {
+        private val pool = Pool({ clear() }) { arrayListOf<Continuation<Any>>() }
+    }
+
+    override val context = bcontext + cancellationToken
+    private var done = false
+    private var value: T? = null
+    private var exception: Throwable? = null
+    private val cc = arrayListOf<Continuation<T?>>()
+
+    private fun pool() = pool as Pool<ArrayList<Continuation<T?>>>
+
+    override fun resume(value: T) {
+        done = true
+        this.value = value
+        flush()
+    }
+
+    override fun resumeWithException(exception: Throwable) {
+        done = true
+        this.exception = exception
+        flush()
+    }
+
+    override fun cancel(exception: CancelException) {
+        cancellationToken.cancel(exception)
+    }
+
+    override suspend fun await(): T = suspendCoroutineCancellable { c, cancel ->
+        val rc = (c as Continuation<T?>)
+        synchronized(cc) { cc += rc }
+        cancel { cc -= rc }
+        flush()
+    }
+
+    fun flush() {
+        if (!done) return
+        pool().use { temp ->
+            synchronized(cc) { temp.addAll(cc) }
+            for (c in temp) {
+                try {
+                    if (exception != null) {
+                        c.resumeWithException(exception!!)
+                    } else {
+                        c.resume(value)
+                    }
+                } catch (e: IllegalStateException) {
+                }
+            }
+        }
+    }
+}
+
+suspend fun delay(ms: Int): Unit = Kml.delay(ms)
+
+fun <T> launchAndForget(context: CoroutineContext = EmptyCoroutineContext, callback: suspend () -> T): Unit {
+    launch(context) { callback() }
+}
+
+fun <T> launch(context: CoroutineContext = EmptyCoroutineContext, callback: suspend () -> T): Job<T> {
+    return Kml.launch(context, callback)
+}
+
+suspend fun parallel(vararg callbacks: suspend () -> Unit) {
+    val jobs = callbacks.map { launch { it() } }
+    for (job in jobs) job.await()
 }
 
 abstract class KmlBase {
-    open fun launch(context: CoroutineContext = EmptyCoroutineContext, callback: suspend () -> Unit) {
-        callback.startCoroutine(object : Continuation<Unit> {
-            override val context: CoroutineContext = context
-            override fun resume(value: Unit) = Unit
-            override fun resumeWithException(exception: Throwable) {
-                println(exception)
-            }
-        })
+    open fun <T> launch(context: CoroutineContext = EmptyCoroutineContext, callback: suspend () -> T): Job<T> {
+        val cont = Deferred<T>(context, CancellationToken())
+        callback.startCoroutine(cont)
+        return cont
     }
 
     open fun application(windowConfig: WindowConfig, listener: KMLWindowListener) {

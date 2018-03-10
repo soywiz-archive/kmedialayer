@@ -122,8 +122,9 @@ object KmlBaseJvm : KmlBase() {
         return BufferedImageKmlNativeImageData(out)
     }
 
-    override suspend fun delay(ms: Int): Unit = suspendCoroutine { c ->
-        Timers.add(ms) { c.resume(Unit) }
+    override suspend fun delay(ms: Int): Unit = suspendCoroutineCancellable { c, cancel ->
+        val timer = Timers.add(ms) { c.resume(Unit) }
+        cancel { Timers.remove(timer) }
     }
 
     override fun enqueue(task: () -> Unit) {
@@ -275,7 +276,7 @@ private val KEYS = mapOf(
 actual val Kml: KmlBase = KmlBaseJvm
 
 object Timers {
-    private class Timer(val start: Long, val callback: () -> Unit)
+    class Timer(val start: Long, val callback: () -> Unit)
 
     private val tempTimers = arrayListOf<Timer>()
     private val timers = arrayListOf<Timer>()
@@ -283,12 +284,16 @@ object Timers {
     private val tempTasks = arrayListOf<() -> Unit>()
     private val tasks = arrayListOf<() -> Unit>()
 
-    fun add(ms: Int, callback: () -> Unit) {
-        timers += Timer(System.currentTimeMillis() + ms, callback)
+    fun add(ms: Int, callback: () -> Unit): Timer {
+        return Timer(System.currentTimeMillis() + ms, callback).apply { timers += this }
     }
 
     fun add(callback: () -> Unit) {
         tasks += callback
+    }
+
+    fun remove(timer: Timer) {
+        timers -= timer
     }
 
     fun check() {

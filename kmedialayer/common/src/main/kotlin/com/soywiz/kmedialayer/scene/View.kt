@@ -17,19 +17,19 @@ open class View {
     protected val _globalMatrix = Matrix2d()
     protected var _invGlobalMatrixValid = false
     protected val _invGlobalMatrix = Matrix2d()
-    private var _components: ArrayList<ViewComponent>? = null
-    val components: List<ViewComponent>? get() = _components
+    private var _components: ArrayList<Component>? = null
+    val components: List<Component>? get() = _components
 
-    inline fun <reified T : ViewComponent> getOrCreateComponent(component: (View) -> T): T {
+    inline fun <reified T : Component> getOrCreateComponent(component: (View) -> T): T {
         return (components?.firstOrNull { it is T } as? T) ?: component(this).apply { addComponent(this) }
     }
 
-    fun addComponent(component: ViewComponent) {
+    fun addComponent(component: Component) {
         if (_components == null) _components = arrayListOf()
         _components?.add(component)
     }
 
-    fun removeComponent(component: ViewComponent) {
+    fun removeComponent(component: Component) {
         val removed = _components?.remove(component) ?: false
         if (removed) {
             //component.dettached()
@@ -98,7 +98,7 @@ open class View {
     var scaleY; get() = t.scaleY; set(value) = run { invalidate(); t.scaleY = value }
     var rotation; get() = t.rotation; set(value) = run { invalidate(); t.rotation = value }
     var rotationDegrees; get() = t.rotationDegrees; set(value) = run { invalidate(); t.rotationDegrees = value }
-    var alpha = 1.0; set(value) { invalidate(); field = value }
+    var alpha = 1.0; set(value) = run { invalidate(); field = value }
     var speed = 1.0
 
     fun invalidate() {
@@ -121,27 +121,6 @@ open class View {
     fun removeFromParent() = run { parent?.removeChild(this) }
 
     open operator fun get(name: String): View? = if (this.name == name) this else null
-}
-
-interface ViewComponent {
-    val view: View
-}
-
-fun ViewComponent.dettatch() = view.removeComponent(this)
-
-interface ViewMouseComponent : ViewComponent {
-    fun onMouseMove(x: Int, y: Int)
-    fun onMouseUp(button :Int)
-    fun onMouseDown(button :Int)
-    fun onMouseClick(button :Int)
-}
-
-interface ViewUpdateComponent : ViewComponent {
-    fun update(ms: Double)
-}
-
-interface ViewResizeComponent : ViewComponent {
-    fun resized(width: Int, height: Int)
 }
 
 class ViewTransform {

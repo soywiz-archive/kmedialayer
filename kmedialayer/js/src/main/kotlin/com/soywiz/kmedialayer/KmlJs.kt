@@ -18,7 +18,7 @@ fun launch(context: CoroutineContext = EmptyCoroutineContext, callback: suspend 
 }
 
 object KmlBaseJs : KmlBase() {
-    override fun application(windowConfig: WindowConfig, listener: KMLWindowListener) = launch {
+    override fun application(windowConfig: WindowConfig, listener: KMLWindowListener): Unit = launchAndForget {
         document.title = windowConfig.title
         var mustAppendCanvas = false
         val canvas =

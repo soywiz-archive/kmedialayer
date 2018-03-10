@@ -4,27 +4,15 @@ import com.soywiz.kmedialayer.scene.*
 import com.soywiz.kmedialayer.scene.util.*
 
 interface MouseEvents {
-    fun click(handler: View.() -> Unit)
-    fun out(handler: View.() -> Unit)
-    fun over(handler: View.() -> Unit)
+    val click: Signal<View>
+    val out: Signal<View>
+    val over: Signal<View>
 }
 
-private class MouseEventsComponent(override val view: View) : ViewMouseComponent, ViewUpdateComponent, MouseEvents {
-    val clickEvents = Signal<View>()
-    val outEvents = Signal<View>()
-    val overEvents = Signal<View>()
-
-    override fun click(handler: View.() -> Unit) {
-        clickEvents += handler
-    }
-
-    override fun out(handler: View.() -> Unit) {
-        outEvents += handler
-    }
-
-    override fun over(handler: View.() -> Unit) {
-        overEvents += handler
-    }
+private class MouseEventsComponent(override val view: View) : MouseComponent, UpdateComponent, MouseEvents {
+    override val click = Signal<View>()
+    override val out = Signal<View>()
+    override val over = Signal<View>()
 
     var lastInside: Boolean? = null
 
@@ -39,7 +27,7 @@ private class MouseEventsComponent(override val view: View) : ViewMouseComponent
 
     override fun onMouseClick(button: Int) {
         if (lastInside == true) {
-            clickEvents(view)
+            click(view)
         }
     }
 
@@ -50,9 +38,9 @@ private class MouseEventsComponent(override val view: View) : ViewMouseComponent
         if (lastInside != nowInside) {
             this.lastInside = nowInside
             if (nowInside) {
-                overEvents(view)
+                over(view)
             } else {
-                outEvents(view)
+                out(view)
             }
         }
     }

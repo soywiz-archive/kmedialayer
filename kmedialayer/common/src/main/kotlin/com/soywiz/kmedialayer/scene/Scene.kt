@@ -39,51 +39,61 @@ open class Scene {
     open fun onResize(width: Int, height: Int) {
     }
 
-    private val tempComponents: ArrayList<ViewComponent> = arrayListOf()
+    private val tempComponents: ArrayList<Component> = arrayListOf()
 
     fun SceneApplication.updateScene(ms: Int) {
-        forEachComponent<ViewUpdateComponent> { c -> c.update(ms.toDouble() * c.view.concatSpeed) }
+        forEachComponent<UpdateComponent> { c -> c.update(ms.toDouble() * c.view.concatSpeed) }
         onUpdate(ms)
     }
 
     fun SceneApplication.resizeScene(width: Int, height: Int) {
-        forEachComponent<ViewResizeComponent> { c -> c.resized(width, height) }
+        forEachComponent<ResizeComponent> { c -> c.resized(width, height) }
         onResize(width, height)
     }
 
+    fun SceneApplication.keyDown(key: Key) {
+        forEachComponent<KeyComponent> { c -> c.onKeyDown(key) }
+        onKeyDown(key)
+    }
+
+    fun SceneApplication.keyUp(key: Key) {
+        forEachComponent<KeyComponent> { c -> c.onKeyUp(key) }
+        onKeyDown(key)
+    }
+
     fun SceneApplication.mouseMoved(x: Int, y: Int) {
-        forEachComponent<ViewMouseComponent> { c -> c.onMouseMove(x, y) }
+        forEachComponent<MouseComponent> { c -> c.onMouseMove(x, y) }
         onMouseMove(x, y)
     }
 
     fun SceneApplication.mouseDown(button: Int) {
-        forEachComponent<ViewMouseComponent> { c -> c.onMouseDown(button) }
+        forEachComponent<MouseComponent> { c -> c.onMouseDown(button) }
         onMouseDown(button)
     }
 
     fun SceneApplication.mouseUp(button: Int) {
-        forEachComponent<ViewMouseComponent> { c -> c.onMouseUp(button) }
+        forEachComponent<MouseComponent> { c -> c.onMouseUp(button) }
         onMouseUp(button)
     }
 
     fun SceneApplication.mouseClick(button: Int) {
-        forEachComponent<ViewMouseComponent> { c -> c.onMouseClick(button) }
+        forEachComponent<MouseComponent> { c -> c.onMouseClick(button) }
         onMouseUp(button)
     }
 
-    private inline fun <reified T : ViewComponent> forEachComponent(callback: (T) -> Unit) {
+    private inline fun <reified T : Component> forEachComponent(callback: (T) -> Unit) {
         for (c in getComponents(root, tempComponents)) {
             if (c is T) callback(c)
         }
     }
 
-    private fun getComponents(view: View, out: ArrayList<ViewComponent> = arrayListOf()): List<ViewComponent> {
+    private fun getComponents(view: View, out: ArrayList<Component> = arrayListOf()): List<Component> {
         out.clear()
         appendComponents(view, out)
         return out
     }
 
-    private fun appendComponents(view: View, out: ArrayList<ViewComponent>) {
+    private fun appendComponents(view: View, out: ArrayList<Component>) {
         if (view is ViewContainer) for (child in view.children) appendComponents(child, out)
         val components = view.components
         if (components != null) out.addAll(components)
