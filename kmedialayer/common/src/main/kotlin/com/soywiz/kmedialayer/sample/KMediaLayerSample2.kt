@@ -46,7 +46,7 @@ object KMediaLayerSample2 {
                                 alpha = 0.5
                             }
                             click {
-                                jlaunch {
+                                launch {
                                     parallel({
                                         moveBy(100.0, 100.0, easing = Easing.QUADRATIC_EASE_IN_OUT)
                                     }, {

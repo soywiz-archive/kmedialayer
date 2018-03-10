@@ -9,14 +9,6 @@ import kotlin.browser.*
 import kotlin.coroutines.experimental.*
 import kotlin.js.*
 
-fun launch(context: CoroutineContext = EmptyCoroutineContext, callback: suspend () -> Unit) {
-    callback.startCoroutine(object : Continuation<Unit> {
-        override val context: CoroutineContext = context
-        override fun resume(value: Unit) = Unit
-        override fun resumeWithException(exception: Throwable) = console.error(exception)
-    })
-}
-
 object KmlBaseJs : KmlBase() {
     override fun application(windowConfig: WindowConfig, listener: KMLWindowListener): Unit = launchAndForget {
         document.title = windowConfig.title
@@ -64,6 +56,10 @@ object KmlBaseJs : KmlBase() {
                 canvas.height = height
                 canvas.style.width = "${width}px"
                 canvas.style.height = "${height}px"
+                document.body?.style?.width = "${width}px"
+                document.body?.style?.height = "100%"
+                document.body?.style?.overflowX = "hidden"
+                document.body?.style?.overflowY = "hidden"
                 gl.viewport(0, 0, width, height)
                 listener.resized(width, height)
             }

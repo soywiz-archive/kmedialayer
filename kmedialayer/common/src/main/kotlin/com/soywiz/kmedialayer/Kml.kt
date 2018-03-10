@@ -40,7 +40,7 @@ class JobQueue(val context: CoroutineContext = EmptyCoroutineContext) {
 
             while (tasks.isNotEmpty()) {
                 val task = tasks.removeAt(0)
-                val job = jlaunch { task() }
+                val job = launch { task() }
                 currentJob = job
                 job.await()
                 currentJob = null
@@ -60,7 +60,7 @@ class JobQueue(val context: CoroutineContext = EmptyCoroutineContext) {
 
     fun queue(callback: suspend () -> Unit) {
         tasks += callback
-        if (!running) jlaunch { run() }
+        if (!running) launch { run() }
     }
 
     operator fun invoke(callback: suspend () -> Unit) = queue(callback)
@@ -123,15 +123,15 @@ class Deferred<T>(bcontext: CoroutineContext, val cancellationToken: Cancellatio
 suspend fun delay(ms: Int): Unit = Kml.delay(ms)
 
 fun <T> launchAndForget(context: CoroutineContext = EmptyCoroutineContext, callback: suspend () -> T): Unit {
-    jlaunch(context) { callback() }
+    launch(context) { callback() }
 }
 
-fun <T> jlaunch(context: CoroutineContext = EmptyCoroutineContext, callback: suspend () -> T): Job<T> {
+fun <T> launch(context: CoroutineContext = EmptyCoroutineContext, callback: suspend () -> T): Job<T> {
     return Kml.launch(context, callback)
 }
 
 suspend fun parallel(vararg callbacks: suspend () -> Unit) {
-    val jobs = callbacks.map { jlaunch { it() } }
+    val jobs = callbacks.map { launch { it() } }
     for (job in jobs) job.await()
 }
 
