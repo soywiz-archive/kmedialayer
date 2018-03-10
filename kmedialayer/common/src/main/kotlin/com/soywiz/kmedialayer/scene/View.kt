@@ -84,6 +84,9 @@ open class View {
     fun globalToLocalX(x: Double, y: Double): Double = invGlobalMatrix.transformX(x, y)
     fun globalToLocalY(x: Double, y: Double): Double = invGlobalMatrix.transformY(x, y)
 
+    fun localToGlobalX(x: Double, y: Double): Double = globalMatrix.transformX(x, y)
+    fun localToGlobalY(x: Double, y: Double): Double = globalMatrix.transformY(x, y)
+
     fun globalToLocal(p: Point, out: Point = Point()): Point = out.setToTransform(invGlobalMatrix, p)
     fun localToGlobal(p: Point, out: Point = Point()): Point = out.setToTransform(globalMatrix, p)
 
@@ -97,7 +100,7 @@ open class View {
     var scaleX; get() = t.scaleX; set(value) = run { invalidate(); t.scaleX = value }
     var scaleY; get() = t.scaleY; set(value) = run { invalidate(); t.scaleY = value }
     var rotation; get() = t.rotation; set(value) = run { invalidate(); t.rotation = value }
-    var rotationDegrees; get() = t.rotationDegrees; set(value) = run { invalidate(); t.rotationDegrees = value }
+    var rotationDegrees; get() = t.rotationDegrees; set(value) = run { invalidate(); t.rotationDegrees = value % 360 }
     var alpha = 1.0; set(value) = run { invalidate(); field = value }
     var speed = 1.0
 
@@ -121,6 +124,17 @@ open class View {
     fun removeFromParent() = run { parent?.removeChild(this) }
 
     open operator fun get(name: String): View? = if (this.name == name) this else null
+
+    open fun clone(): View = View().apply { copyPropertiesFrom(this@View) }
+    open fun copyPropertiesFrom(other: View) {
+        x = other.x
+        y = other.y
+        scaleX = other.scaleX
+        scaleY = other.scaleY
+        rotation = other.rotation
+        alpha = other.alpha
+        speed = other.speed
+    }
 }
 
 class ViewTransform {
@@ -176,6 +190,13 @@ open class ViewContainer : View() {
         for (c in children) return c[name] ?: continue
         return null
     }
+
+    override fun clone(): ViewContainer {
+        val out = ViewContainer()
+        out.copyPropertiesFrom(this)
+        for (child in children) out.addChild(child.clone())
+        return out
+    }
 }
 
 open class Image(var tex: SceneTexture) : View() {
@@ -185,21 +206,32 @@ open class Image(var tex: SceneTexture) : View() {
     var p3 = Point()
     var computedAlpha = 1.0
 
+    val width get() = tex.widthPixels.toDouble()
+    val height get() = tex.heightPixels.toDouble()
+    var anchorX: Double = 0.0
+    var anchorY: Double = 0.0
+
+    fun anchor(ax: Double, ay: Double = ax) = run { anchorX = ax; anchorY = ay }
+
     override fun recompute() {
         if (validParents && validChildren) return
         super.recompute()
         val gm = _globalMatrix
-        p0.setToTransform(gm, 0.0, 0.0)
-        p1.setToTransform(gm, tex.widthPixels.toDouble(), 0.0)
-        p2.setToTransform(gm, 0.0, tex.heightPixels.toDouble())
-        p3.setToTransform(gm, tex.widthPixels.toDouble(), tex.heightPixels.toDouble())
+        val sx = -width * anchorX
+        val sy = -height * anchorY
+        p0.setToTransform(gm, sx, sy)
+        p1.setToTransform(gm, sx + width, sy)
+        p2.setToTransform(gm, sx, sy + height)
+        p3.setToTransform(gm, sx + width, sy + height)
         computedAlpha = concatAlpha
     }
 
     override fun viewInGlobal(x: Double, y: Double): View? {
         val localX = globalToLocalX(x, y)
         val localY = globalToLocalY(x, y)
-        return if (localX >= 0.0 && localX <= tex.widthPixels.toDouble() && localY >= 0.0 && localY <= tex.heightPixels.toDouble()) this else null
+        val sx = -width * anchorX
+        val sy = -height * anchorY
+        return if (localX >= sx && localX <= sx + width && localY >= sy && localY <= sy + height) this else null
     }
 
     override fun render(rc: SceneRenderContext) {
@@ -217,4 +249,6 @@ open class Image(var tex: SceneTexture) : View() {
             computedAlpha.toFloat()
         )
     }
+
+    override fun clone(): Image = Image(tex).apply { copyPropertiesFrom(this@Image) }
 }

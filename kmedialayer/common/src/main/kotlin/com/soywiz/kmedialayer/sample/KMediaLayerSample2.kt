@@ -12,7 +12,8 @@ object KMediaLayerSample2 {
                 lateinit var image: Image
                 lateinit var container: ViewContainer
 
-                val animationQueue = JobQueue()
+                val rotationQueue = JobQueue()
+                val queue = JobQueue()
 
                 override suspend fun init() {
                     //val data = Kml.loadFileBytes("mini.png")
@@ -26,6 +27,7 @@ object KMediaLayerSample2 {
                         this += Image(tex).apply {
                             name = "image"
                             image = this
+                            anchor(0.5, 0.5)
                             x = 10.0
                             y = 10.0
                         }
@@ -44,7 +46,7 @@ object KMediaLayerSample2 {
                                 alpha = 0.5
                             }
                             click {
-                                launch {
+                                jlaunch {
                                     parallel({
                                         moveBy(100.0, 100.0, easing = Easing.QUADRATIC_EASE_IN_OUT)
                                     }, {
@@ -55,11 +57,37 @@ object KMediaLayerSample2 {
                                 Unit
                                 //println("CLICKED!")
                             }
+                            downOutside {
+                                queue.cancel().queue {
+                                    image.moveTo(mouse.x, mouse.y, time = 0.3, easing = Easing.QUADRATIC_EASE_IN_OUT)
+                                }
+                            }
                         }
-                        keys {
+                        val image = this["image"]!!
+                        image.keys {
+                            down(Key.ENTER) {
+                                rotationQueue.queue {
+                                    rotateBy(90.0, time = 0.3)
+                                }
+                            }
+                            down(Key.UP) {
+                                queue.cancelComplete().queue {
+                                    moveBy(0.0, -32.0)
+                                }
+                            }
+                            down(Key.DOWN) {
+                                queue.cancelComplete().queue {
+                                    moveBy(0.0, 32.0)
+                                }
+                            }
+                            down(Key.LEFT) {
+                                queue.cancelComplete().queue {
+                                    moveBy(-32.0, 0.0)
+                                }
+                            }
                             down(Key.RIGHT) {
-                                animationQueue.cancel().invoke {
-                                    moveBy(100.0, 0.0)
+                                queue.cancelComplete().queue {
+                                    moveBy(+32.0, 0.0)
                                 }
                             }
                         }

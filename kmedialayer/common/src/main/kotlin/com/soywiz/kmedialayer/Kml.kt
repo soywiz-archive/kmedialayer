@@ -9,7 +9,7 @@ data class WindowConfig(
     val title: String = "KMediaLayer"
 )
 
-open class CancelException : RuntimeException()
+open class CancelException(val complete: Boolean = false) : RuntimeException()
 
 interface Job<T> {
     fun cancel(exception: CancelException = CancelException())
@@ -40,7 +40,7 @@ class JobQueue(val context: CoroutineContext = EmptyCoroutineContext) {
 
             while (tasks.isNotEmpty()) {
                 val task = tasks.removeAt(0)
-                val job = launch { task() }
+                val job = jlaunch { task() }
                 currentJob = job
                 job.await()
                 currentJob = null
@@ -51,15 +51,19 @@ class JobQueue(val context: CoroutineContext = EmptyCoroutineContext) {
         }
     }
 
-    fun cancel(): JobQueue {
-        currentJob?.cancel()
+    fun cancel(complete: Boolean = false): JobQueue {
+        currentJob?.cancel(CancelException(complete))
         return this
     }
 
-    operator fun invoke(callback: suspend () -> Unit) {
+    fun cancelComplete() = cancel(true)
+
+    fun queue(callback: suspend () -> Unit) {
         tasks += callback
-        if (!running) launch { run() }
+        if (!running) jlaunch { run() }
     }
+
+    operator fun invoke(callback: suspend () -> Unit) = queue(callback)
 }
 
 class Deferred<T>(bcontext: CoroutineContext, val cancellationToken: CancellationToken) : Continuation<T>, Job<T> {
@@ -119,15 +123,15 @@ class Deferred<T>(bcontext: CoroutineContext, val cancellationToken: Cancellatio
 suspend fun delay(ms: Int): Unit = Kml.delay(ms)
 
 fun <T> launchAndForget(context: CoroutineContext = EmptyCoroutineContext, callback: suspend () -> T): Unit {
-    launch(context) { callback() }
+    jlaunch(context) { callback() }
 }
 
-fun <T> launch(context: CoroutineContext = EmptyCoroutineContext, callback: suspend () -> T): Job<T> {
+fun <T> jlaunch(context: CoroutineContext = EmptyCoroutineContext, callback: suspend () -> T): Job<T> {
     return Kml.launch(context, callback)
 }
 
 suspend fun parallel(vararg callbacks: suspend () -> Unit) {
-    val jobs = callbacks.map { launch { it() } }
+    val jobs = callbacks.map { jlaunch { it() } }
     for (job in jobs) job.await()
 }
 

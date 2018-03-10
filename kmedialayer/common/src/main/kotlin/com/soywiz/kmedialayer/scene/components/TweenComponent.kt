@@ -1,5 +1,6 @@
 package com.soywiz.kmedialayer.scene.components
 
+import com.soywiz.kmedialayer.*
 import com.soywiz.kmedialayer.scene.*
 import com.soywiz.kmedialayer.scene.geom.*
 import com.soywiz.kmedialayer.scene.util.*
@@ -58,17 +59,17 @@ suspend fun <T : View> T.tween(
     addComponent(tween)
     try {
         tween.onDone.awaitOne()
-    } catch (e: Throwable) {
-        //println("CANCELLED TWEEN!")
-        tween.updateRatio(1.0)
-        //delay(1000)
+    } catch (e: CancelException) {
+        if (e.complete) tween.updateRatio(1.0)
         tween.removeFromView()
-        //println(e)
     }
 }
 
 suspend fun View.moveBy(dx: Double, dy: Double, time: Double = 1.0, easing: Easing = Easing.LINEAR) =
     tween(this::x[this.x + dx], this::y[this.y + dy], time = time, easing = easing)
+
+suspend fun View.rotateBy(angle: Double, time: Double = 1.0, easing: Easing = Easing.LINEAR) =
+    tween(this::rotationDegrees[this.rotationDegrees + angle], time = time, easing = easing)
 
 suspend fun View.moveTo(x: Double, y: Double, time: Double = 1.0, easing: Easing = Easing.LINEAR) =
     tween(this::x[x], this::y[y], time = time, easing = easing)
