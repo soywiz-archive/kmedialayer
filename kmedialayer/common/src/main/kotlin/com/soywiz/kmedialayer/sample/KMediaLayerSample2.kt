@@ -1,5 +1,6 @@
 package com.soywiz.kmedialayer.sample
 
+import com.soywiz.kmedialayer.*
 import com.soywiz.kmedialayer.scene.*
 
 object KMediaLayerSample2 {
@@ -30,30 +31,46 @@ object KMediaLayerSample2 {
                     }
                 }
 
-                override fun onKeyDown(keyCode: Int) {
-                    image.act {
-                        moveBy(32.0, 0.0)
-                        //repeat(2) {
-                        //    moveBy(0.0, 10.0)
-                        //}
-                        moveBy(0.0, 32.0)
-                        moveBy(0.0, 32.0)
-                        parallel {
-                            show()
-                            moveBy(32.0, 32.0)
+                override fun onKeyDown(key: Key) {
+                    println("key: $key")
+                    when (key) {
+                        Key.RIGHT -> {
+                            image.act {
+                                moveBy(32.0, 0.0)
+                                //repeat(2) {
+                                //    moveBy(0.0, 10.0)
+                                //}
+                                moveBy(0.0, 32.0)
+                                moveBy(0.0, 32.0)
+                                parallel {
+                                    show()
+                                    moveBy(32.0, 32.0)
+                                }
+                            }
+                            container.rotationDegrees += 2.0
                         }
                     }
-                    container.rotationDegrees += 2.0
+                    //println(keyCode)
                 }
 
+                var mouseX: Double = 0.0
+                var mouseY: Double = 0.0
+
                 override fun onMouseMove(x: Int, y: Int) {
+                    mouseX = x.toDouble()
+                    mouseY = y.toDouble()
+                }
+
+                override fun update(ms: Int) {
+                    val x = mouseX
+                    val y = mouseY
                     //println("$x,$y")
                     if (image.viewInGlobal(x, y) != null) {
                         image.alpha = 0.5
                     } else {
                         image.alpha = 1.0
                     }
-                    println(root.viewInGlobal(x, y))
+                    //println(root.viewInGlobal(x, y))
                 }
             }
         }

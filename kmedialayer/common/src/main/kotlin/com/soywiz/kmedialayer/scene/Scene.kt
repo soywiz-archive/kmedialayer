@@ -17,10 +17,10 @@ open class Scene {
     }
 
 
-    open fun onKeyDown(keyCode: Int) {
+    open fun onKeyDown(key: Key) {
     }
 
-    open fun onKeyUp(keyCode: Int) {
+    open fun onKeyUp(key: Key) {
     }
 
     open fun onMouseMove(x: Int, y: Int) {
@@ -32,8 +32,12 @@ open class Scene {
     open fun onMouseUp(button: Int) {
     }
 
-    fun update(ms: Int) {
+    open fun update(ms: Int) {
+    }
+
+    fun updateScene(ms: Int) {
         update(root, ms.toDouble())
+        update(ms)
     }
 
     fun update(view: View, ms: Double) {
@@ -119,10 +123,13 @@ open class View {
             return _invGlobalMatrix
         }
 
+    fun globalToLocalX(x: Double, y: Double): Double = invGlobalMatrix.transformX(x, y)
+    fun globalToLocalY(x: Double, y: Double): Double = invGlobalMatrix.transformY(x, y)
+
     fun globalToLocal(p: Point, out: Point = Point()): Point = out.setToTransform(invGlobalMatrix, p)
     fun localToGlobal(p: Point, out: Point = Point()): Point = out.setToTransform(globalMatrix, p)
 
-    open fun viewInGlobal(x: Int, y: Int): View? {
+    open fun viewInGlobal(x: Double, y: Double): View? {
         return null
     }
 
@@ -198,7 +205,7 @@ open class ViewContainer : View() {
         }
     }
 
-    override fun viewInGlobal(x: Int, y: Int): View? {
+    override fun viewInGlobal(x: Double, y: Double): View? {
         for (child in _children) return child.viewInGlobal(x, y) ?: continue
         return null
     }
@@ -220,13 +227,10 @@ open class Image(var tex: SceneTexture) : View() {
         p3.setToTransform(gm, tex.widthPixels.toDouble(), tex.heightPixels.toDouble())
     }
 
-    override fun viewInGlobal(x: Int, y: Int): View? {
-        recompute()
-        val minX = min(min(min(p0.x, p1.x), p2.x), p3.x)
-        val maxX = max(max(max(p0.x, p1.x), p2.x), p3.x)
-        val minY = min(min(min(p0.y, p1.y), p2.y), p3.y)
-        val maxY = max(max(max(p0.y, p1.y), p2.y), p3.y)
-        return if ((x in minX..maxX) && (y in minY..maxY)) this else null
+    override fun viewInGlobal(x: Double, y: Double): View? {
+        val localX = globalToLocalX(x, y)
+        val localY = globalToLocalY(x, y)
+        return if (localX >= 0.0 && localX <= tex.widthPixels.toDouble() && localY >= 0.0 && localY <= tex.heightPixels.toDouble()) this else null
     }
 
     override fun render(rc: SceneRenderContext) {

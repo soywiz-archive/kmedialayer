@@ -17,7 +17,7 @@ fun SceneApplication(windowConfig: WindowConfig = WindowConfig(), sceneGen: () -
             if (lastTime == 0.0) lastTime = Kml.currentTimeMillis()
             val now = Kml.currentTimeMillis()
             if (now != lastTime) {
-                scene.update((now - lastTime).toInt())
+                scene.updateScene((now - lastTime).toInt())
                 lastTime = now
             }
 
@@ -26,11 +26,11 @@ fun SceneApplication(windowConfig: WindowConfig = WindowConfig(), sceneGen: () -
             renderContext.flush()
         }
 
-        override fun keyUpdate(keyCode: Int, pressed: Boolean) {
+        override fun keyUpdate(key: Key, pressed: Boolean) {
             if (pressed) {
-                scene.onKeyDown(keyCode)
+                scene.onKeyDown(key)
             } else {
-                scene.onKeyUp(keyCode)
+                scene.onKeyUp(key)
             }
         }
 
