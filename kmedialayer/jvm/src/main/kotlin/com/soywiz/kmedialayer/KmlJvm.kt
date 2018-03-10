@@ -46,14 +46,6 @@ object KmlBaseJvm : KmlBase() {
             listener.init(gl)
         }
 
-        var mouseX = 0
-        var mouseY = 0
-        var mouseButtons = 0
-
-        fun updatedMouse() {
-            listener.mouseUpdate(mouseX, mouseY, mouseButtons)
-        }
-
         keyCallback = object : GLFWKeyCallback() {
             override fun invoke(
                 window: kotlin.Long,
@@ -71,9 +63,7 @@ object KmlBaseJvm : KmlBase() {
 
         cursorPosCallback = object : GLFWCursorPosCallback() {
             override fun invoke(window: kotlin.Long, xpos: kotlin.Double, ypos: kotlin.Double) {
-                mouseX = xpos.toInt()
-                mouseY = ypos.toInt()
-                updatedMouse()
+                listener.mouseUpdateMove(xpos.toInt(), ypos.toInt())
             }
         }
         glfwSetCursorPosCallback(window, cursorPosCallback)
@@ -98,12 +88,8 @@ object KmlBaseJvm : KmlBase() {
 
         mouseButtonCallback = object : GLFWMouseButtonCallback() {
             override fun invoke(window: kotlin.Long, button: kotlin.Int, action: kotlin.Int, mods: kotlin.Int) {
-                if (action == GLFW_PRESS) {
-                    mouseButtons = mouseButtons or (1 shl button)
-                } else {
-                    mouseButtons = mouseButtons and (1 shl button).inv()
-                }
-                updatedMouse()
+                val pressing = (action == GLFW_PRESS)
+                listener.mouseUpdateButton(button, pressing)
             }
         }
         glfwSetMouseButtonCallback(window, mouseButtonCallback)

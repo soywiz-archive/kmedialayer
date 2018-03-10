@@ -2,6 +2,7 @@ package com.soywiz.kmedialayer.sample
 
 import com.soywiz.kmedialayer.*
 import com.soywiz.kmedialayer.scene.*
+import com.soywiz.kmedialayer.scene.components.*
 
 object KMediaLayerSample2 {
     fun main(args: Array<String>) {
@@ -20,6 +21,7 @@ object KMediaLayerSample2 {
                         scaleX = 2.0
                         scaleY = 2.0
                         this += Image(tex).apply {
+                            name = "image"
                             image = this
                             x = 10.0
                             y = 10.0
@@ -27,6 +29,20 @@ object KMediaLayerSample2 {
                         this += Image(tex).apply {
                             x = 100.0
                             y = 10.0
+                        }
+
+                        mouse {
+                            over {
+                                //this["image"]?.alpha = 1.0
+                                alpha = 1.0
+                            }
+                            out {
+                                //this["image"]?.alpha = 0.5
+                                alpha = 0.5
+                            }
+                            click {
+                                println("CLICKED!")
+                            }
                         }
                     }
                 }
@@ -53,6 +69,7 @@ object KMediaLayerSample2 {
                     //println(keyCode)
                 }
 
+                /*
                 var mouseX: Double = 0.0
                 var mouseY: Double = 0.0
 
@@ -61,7 +78,7 @@ object KMediaLayerSample2 {
                     mouseY = y.toDouble()
                 }
 
-                override fun update(ms: Int) {
+                override fun onUpdate(ms: Int) {
                     val x = mouseX
                     val y = mouseY
                     //println("$x,$y")
@@ -72,6 +89,7 @@ object KMediaLayerSample2 {
                     }
                     //println(root.viewInGlobal(x, y))
                 }
+                */
             }
         }
     }

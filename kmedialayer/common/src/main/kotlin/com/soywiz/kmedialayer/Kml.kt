@@ -8,6 +8,10 @@ data class WindowConfig(
     val title: String = "KMediaLayer"
 )
 
+fun launch(context: CoroutineContext = EmptyCoroutineContext, callback: suspend () -> Unit) {
+    Kml.launch(context, callback)
+}
+
 abstract class KmlBase {
     open fun launch(context: CoroutineContext = EmptyCoroutineContext, callback: suspend () -> Unit) {
         callback.startCoroutine(object : Continuation<Unit> {
@@ -64,7 +68,10 @@ open class KMLWindowListener {
     open fun gamepadUpdate(button: Int, pressed: Boolean, ratio: Double) {
     }
 
-    open fun mouseUpdate(x: Int, y: Int, buttons: Int) {
+    open fun mouseUpdateMove(x: Int, y: Int) {
+    }
+
+    open fun mouseUpdateButton(button: Int, pressed: Boolean) {
     }
 
     open fun resized(width: Int, height: Int) {

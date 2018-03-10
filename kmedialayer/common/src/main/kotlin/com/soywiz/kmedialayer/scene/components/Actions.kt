@@ -1,20 +1,22 @@
-package com.soywiz.kmedialayer.scene
+package com.soywiz.kmedialayer.scene.components
 
+import com.soywiz.kmedialayer.scene.*
 import com.soywiz.kmedialayer.scene.geom.*
 import kotlin.math.*
 
-class ViewActionActionRunner(val runner: ViewActionRunner) {
+class ViewActionActionRunner(val runner: ViewActionRunner) : ViewUpdateComponent {
+    override val view get() = runner.view
     var elapsedTime = 0.0
     val totalTime = runner.time * 1000.0
 
-    fun update(time: Double) {
+    override fun update(ms: Double) {
         if (elapsedTime == 0.0) {
             runner.start()
         }
-        elapsedTime += time
+        elapsedTime += ms
         if (elapsedTime >= totalTime) {
             runner.update(1.0)
-            runner.view.actions = null
+            dettatch()
         } else {
             runner.update(elapsedTime / totalTime)
         }
@@ -36,7 +38,8 @@ interface ViewAction {
     val time: Double
     fun createRunner(view: View): ViewActionRunner
 
-    class MoveBy(val x: Double, val y: Double, override val time: Double) : ViewAction {
+    class MoveBy(val x: Double, val y: Double, override val time: Double) :
+        ViewAction {
         override fun createRunner(view: View): ViewActionRunner = object : ViewActionRunner(view, this) {
             var sx = 0.0
             var sy = 0.0
@@ -73,7 +76,8 @@ interface ViewAction {
         }
     }
 
-    class AList(val actions: List<ViewAction>) : ViewAction {
+    class AList(val actions: List<ViewAction>) :
+        ViewAction {
         override val time: Double = actions.sumByDouble { it.time }
         override fun createRunner(view: View): ViewActionRunner = object : ViewActionRunner(view, this) {
             val tasks = actions.map { it.createRunner(view) }
@@ -93,7 +97,8 @@ interface ViewAction {
             }
         }
     }
-    class Parallel(val actions: List<ViewAction>) : ViewAction {
+    class Parallel(val actions: List<ViewAction>) :
+        ViewAction {
         override val time: Double = actions.map { it.time }.max() ?: 0.0
         override fun createRunner(view: View): ViewActionRunner = object : ViewActionRunner(view, this) {
             val tasks = actions.map { it.createRunner(view) }
@@ -103,7 +108,8 @@ interface ViewAction {
         }
     }
 
-    class Repeat(val count: Int, val action: ViewAction) : ViewAction {
+    class Repeat(val count: Int, val action: ViewAction) :
+        ViewAction {
         override val time: Double = action.time * count
         override fun createRunner(view: View): ViewActionRunner = object : ViewActionRunner(view, this) {
             override fun update(ratio: Double) {
@@ -128,11 +134,18 @@ class ActionListBuilder {
     }
 
     fun parallel(callback: ActionListBuilder.() -> Unit) {
-        list += ViewAction.Parallel(buildActionList(callback))
+        list += ViewAction.Parallel(
+            buildActionList(
+                callback
+            )
+        )
     }
 
     fun repeat(count: Int, callback: ActionListBuilder.() -> Unit) {
-        list += ViewAction.Repeat(count, buildAction(callback))
+        list += ViewAction.Repeat(
+            count,
+            buildAction(callback)
+        )
     }
 
     fun moveBy(x: Double, y: Double, time: Double = 1.0) {
@@ -157,3 +170,12 @@ class ActionListBuilder {
         }
     }
 }
+
+fun View.act(action: ViewAction) {
+    this.addComponent(ViewActionActionRunner(action.createRunner(this)))
+}
+
+fun View.act(callback: ActionListBuilder.() -> Unit) = act(
+    buildAction(callback)
+)
+

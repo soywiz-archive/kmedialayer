@@ -29,21 +29,20 @@ object KmlBaseJs : KmlBase() {
                 mustAppendCanvas = true
             })) as HTMLCanvasElement
 
-        var mouseX = 0
-        var mouseY = 0
-        var mouseButtons = 0
-
         fun mouseUpdate(me: MouseEvent) {
             val pos = canvas.getBoundingClientRect()
-            mouseX = me.clientX - pos.left.toInt()
-            mouseY = me.clientY - pos.top.toInt()
-            mouseButtons = me.buttons.toInt()
-            listener.mouseUpdate(mouseX, mouseY, mouseButtons)
+            val mouseX = me.clientX - pos.left.toInt()
+            val mouseY = me.clientY - pos.top.toInt()
+            listener.mouseUpdateMove(mouseX, mouseY)
+        }
+
+        fun mouseUpdateButtons(me: MouseEvent, pressed: Boolean) {
+            listener.mouseUpdateButton(me.button.toInt(), pressed)
         }
 
         window.addEventListener("mousemove", { e: Event -> mouseUpdate(e as MouseEvent) })
-        window.addEventListener("mousedown", { e: Event -> mouseUpdate(e as MouseEvent) })
-        window.addEventListener("mouseup", { e: Event -> mouseUpdate(e as MouseEvent) })
+        window.addEventListener("mousedown", { e: Event -> mouseUpdateButtons(e as MouseEvent, true) })
+        window.addEventListener("mouseup", { e: Event -> mouseUpdateButtons(e as MouseEvent, false) })
 
         window.addEventListener("keydown", { e: Event ->
             listener.keyUpdate(KEYS[(e as KeyboardEvent).keyCode] ?: Key.UNKNOWN, true)
