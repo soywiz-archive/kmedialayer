@@ -1,9 +1,6 @@
 package com.soywiz.kmedialayer
 
 import kotlinx.cinterop.*
-import platform.GLUT.*
-import platform.OpenGL.*
-import platform.OpenGLCommon.*
 import platform.posix.*
 import sdl2.*
 import sdl2_image.*
@@ -120,7 +117,7 @@ object KmlBaseNative : KmlBaseNoEventLoop() {
                                 println("RESIZED")
                                 val width = event.window.data1
                                 val height = event.window.data2
-                                glViewport(0, 0, width, height)
+                                glNative.viewport(0, 0, width, height)
                                 globalListener.resized(width, height)
                             }
                         }

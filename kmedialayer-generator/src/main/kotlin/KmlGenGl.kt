@@ -5,7 +5,7 @@ object KmlGenGl {
         printToFile("kmedialayer/android/src/main/kotlin/com/soywiz/kmedialayer/KmlGlAndroid.kt") { generateAndroid() }
         printToFile("kmedialayer/jvm/src/main/kotlin/com/soywiz/kmedialayer/KmlGlJvm.kt") { generateJvm() }
         printToFile("kmedialayer/js/src/main/kotlin/com/soywiz/kmedialayer/KmlGlJsCanvas.kt") { generateJs() }
-        printToFile("kmedialayer/native/src/main/kotlin/com/soywiz/kmedialayer/KmlGlNative.kt") { generateNative() }
+        printToFile("kmedialayer/native/src/main/kotlin_macos/com/soywiz/kmedialayer/KmlGlNative.kt") { generateNative() }
         //printToConsole { generateCommon() }
         //printToConsole { generateJvm() }
     }

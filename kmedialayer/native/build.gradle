@@ -1,8 +1,10 @@
 apply plugin: 'konan'
 
+def includeIphone = false
 //konan.targets = ['iphone', 'iphone_sim', 'macbook', 'linux', 'raspberrypi', 'android_arm32', 'android_arm64', 'wasm32']
 //konan.targets = ['iphone', 'macbook']
 konan.targets = ['macbook']
+//konan.targets = ['macbook']
 //konan.targets = ['iphone']
 //konan.targets = ['iphone', 'iphone_sim', 'macbook', 'linux', 'raspberrypi', 'android_arm32', 'android_arm64']
 
@@ -16,6 +18,16 @@ konanArtifacts {
 					"${System.getProperty("user.home")}/Library/Frameworks/SDL2.framework/Headers",
 					'/opt/local/include/SDL2',
 					'/usr/local/include/SDL2'
+		}
+
+		// Download & unzip : https://www.libsdl.org/release/SDL2-2.0.8.tar.gz
+		// SDL2-2.0.8/build-scripts
+		// ./iosbuild.sh
+		// copy SDL2-2.0.8/build-scripts/platform to ${System.getProperty('user.home')}/ios-dev/SDL2/platform
+		if (includeIphone) {
+			target 'iphone', {
+				includeDirs "${System.getProperty('user.home')}/ios-dev/SDL2/platform/arm64-ios/include/SDL2"
+			}
 		}
 
 		target 'linux', {
@@ -48,6 +60,19 @@ konanArtifacts {
 				'/usr/local/include/SDL2_image'
 		}
 
+		if (includeIphone) {
+			target 'iphone', {
+				// Download & unzip : https://www.libsdl.org/projects/SDL_image/release/SDL2_image-2.0.3.tar.gz
+				// Open Xcode-iOS/SDL_Image.xcodeproj
+				// Build (All iOS)
+				// View Products and show in finder
+				// Copy (Debug/Release-iphoneos/simulator) to ${System.getProperty('user.home')}/ios-dev/SDL2_image/*
+				// Copy SDL_Image.h to ${System.getProperty('user.home')}/ios-dev/SDL2_image/include
+				includeDirs "${System.getProperty('user.home')}/ios-dev/SDL2/platform/arm64-ios/include/SDL2",
+						"${System.getProperty('user.home')}/ios-dev/SDL2_Image/include"
+			}
+		}
+
 		target 'linux', {
 			includeDirs '/usr/include/SDL2_image',
 					'/usr/include/SDL2'
@@ -63,6 +88,9 @@ konanArtifacts {
 		enableMultiplatform true
 		enableOptimizations true
 
+		srcDir "src/main/kotlin"
+		srcDir "src/main/kotlin_sdl"
+
 		libraries {
 			artifact 'sdl2'
 			artifact 'sdl2_image'
@@ -72,6 +100,13 @@ konanArtifacts {
 			linkerOpts "-F ${System.getProperty("user.home")}/Library/Frameworks -F /Library/Frameworks -framework SDL2 -framework SDL2_image"
 			// Use this line instead of the previous one if you've got a 'No SDL-framework' error.
 			//linkerOpts "-L/opt/local/lib -L/usr/local/lib -lSDL2"
+			srcDir "src/main/kotlin_macos"
+		}
+
+		if (includeIphone) {
+			target 'iphone', {
+				srcDir "src/main/kotlin_iphone"
+			}
 		}
 
 		target 'linux', {
