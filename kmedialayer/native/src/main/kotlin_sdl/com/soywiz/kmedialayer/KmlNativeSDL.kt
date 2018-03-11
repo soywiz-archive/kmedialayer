@@ -157,7 +157,7 @@ object KmlBaseNative : KmlBaseNoEventLoop() {
     }
 }
 
-fun readBytes(fileName: String, range: LongRange?): ByteArray {
+fun readBytes(fileName: String, range: LongRange? = null): ByteArray {
     val file = fopen(fileName, "rb") ?: throw RuntimeException("Can't open file $fileName")
     fseek(file, 0, SEEK_END)
     val endPos = ftell(file)

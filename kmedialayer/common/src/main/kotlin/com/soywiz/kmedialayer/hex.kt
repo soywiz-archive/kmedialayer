@@ -15,3 +15,16 @@ internal fun unhex(str: String): ByteArray {
     }
     return out
 }
+
+private val HEX_DIGITS = "0123456789abcdef"
+
+fun Int.toHexString(): String {
+    var v = this
+    var out = ""
+    while (v != 0) {
+        val digit = (v and 0xF)
+        out += HEX_DIGITS[digit]
+        v = v ushr 4
+    }
+    return out.reversed()
+}
