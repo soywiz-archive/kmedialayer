@@ -152,7 +152,7 @@ abstract class KmlBase {
     }
 
     open suspend fun decodeImage(path: String): KmlNativeImageData {
-        TODO("KmlBase.decodeImage(String)")
+        return decodeImage(loadFileBytes(path))
     }
 
     open suspend fun decodeImage(data: ByteArray): KmlNativeImageData {

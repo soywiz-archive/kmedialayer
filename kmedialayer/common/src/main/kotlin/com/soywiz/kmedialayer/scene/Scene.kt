@@ -113,5 +113,13 @@ open class SceneContainer(val rootScene: Scene) : ViewContainer() {
 
 suspend fun Scene.texture(name: String) = SceneTexture(gl.createKmlTexture().upload(Kml.decodeImage(name)))
 suspend fun Scene.texture(data: ByteArray) = SceneTexture(gl.createKmlTexture().upload(Kml.decodeImage(data)))
+suspend fun Scene.texture(bitmap: Bitmap32) =
+    SceneTexture(gl.createKmlTexture().upload(bitmap.width, bitmap.height, bitmap.data))
+
+data class Bitmap32(val width: Int, val height: Int, val data: KmlIntBuffer = KmlIntBuffer(width * height)) {
+    fun index(x: Int, y: Int) = y * width + x
+    operator fun get(x: Int, y: Int) = data[index(x, y)]
+    operator fun set(x: Int, y: Int, value: Int) = run { data[index(x, y)] = value }
+}
 
 val View.scene: Scene? get() = (root as? SceneContainer?)?.rootScene
