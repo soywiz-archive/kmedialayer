@@ -11,7 +11,7 @@ import java.nio.*
 import javax.imageio.*
 import kotlin.coroutines.experimental.*
 
-object KmlBaseJvm : KmlBase() {
+object KmlBaseJvm : KmlBaseNoEventLoop() {
     lateinit var keyCallback: GLFWKeyCallback
     lateinit var cursorPosCallback: GLFWCursorPosCallback
     lateinit var mouseButtonCallback: GLFWMouseButtonCallback
@@ -101,9 +101,20 @@ object KmlBaseJvm : KmlBase() {
 
             // Poll for window events. The key callback above will only be
             // invoked during this call.
-            glfwPollEvents()
+            pollEvents()
 
-            Timers.check()
+            timers.check()
+        }
+    }
+
+    override fun sleep(time: Int) {
+        Thread.sleep(time.toLong())
+    }
+
+    override fun pollEvents() {
+        glfwPollEvents()
+        if (glfwWindowShouldClose(KmlBaseJvm.window) != 0) {
+            System.exit(0)
         }
     }
 
@@ -120,15 +131,6 @@ object KmlBaseJvm : KmlBase() {
             }
         }
         return BufferedImageKmlNativeImageData(out)
-    }
-
-    override suspend fun delay(ms: Int): Unit = suspendCoroutineCancellable { c, cancel ->
-        val timer = Timers.add(ms) { c.resume(Unit) }
-        cancel { Timers.remove(timer) }
-    }
-
-    override fun enqueue(task: () -> Unit) {
-        Timers.add(task)
     }
 
     override suspend fun loadFileBytes(path: String, range: LongRange?): ByteArray {
@@ -274,79 +276,6 @@ private val KEYS = mapOf(
 )
 
 actual val Kml: KmlBase = KmlBaseJvm
-
-object Timers {
-    class Timer(val start: Long, val callback: () -> Unit)
-
-    private val tempTimers = arrayListOf<Timer>()
-    private val timers = arrayListOf<Timer>()
-
-    private val tempTasks = arrayListOf<() -> Unit>()
-    private val tasks = arrayListOf<() -> Unit>()
-
-    fun add(ms: Int, callback: () -> Unit): Timer {
-        return Timer(System.currentTimeMillis() + ms, callback).apply { timers += this }
-    }
-
-    fun add(callback: () -> Unit) {
-        tasks += callback
-    }
-
-    fun remove(timer: Timer) {
-        timers -= timer
-    }
-
-    fun check() {
-        // Timer events
-        val now = System.currentTimeMillis()
-        tempTimers.clear()
-        tempTimers.addAll(timers)
-        for (timer in tempTimers) {
-            if (now >= timer.start) {
-                timer.callback()
-                timers.remove(timer)
-            }
-        }
-        // Queued tasks
-        tempTasks.clear()
-        tempTasks.addAll(tasks)
-        tasks.clear()
-        for (task in tempTasks) {
-            task()
-        }
-    }
-}
-
-private fun <T : Any> runBlocking(context: CoroutineContext = EmptyCoroutineContext, callback: suspend () -> T): T {
-    var done = false
-    lateinit var resultValue: T
-    var resultException: Throwable? = null
-    callback.startCoroutine(object : Continuation<T> {
-        override val context: CoroutineContext = context
-        override fun resume(value: T) {
-            resultValue = value
-            done = true
-        }
-
-        override fun resumeWithException(exception: Throwable) {
-            exception.printStackTrace()
-            resultException = exception
-            done = true
-        }
-    })
-    while (!done) {
-        Thread.sleep(1L)
-        //Timers.check()
-        glfwPollEvents()
-        Timers.check()
-        if (glfwWindowShouldClose(KmlBaseJvm.window) != 0) {
-            System.exit(0)
-        }
-
-    }
-    if (resultException != null) throw resultException!!
-    return resultValue
-}
 
 class BufferedImageKmlNativeImageData(val buffered: BufferedImage) : KmlNativeImageData {
     override val width: Int get() = buffered.width

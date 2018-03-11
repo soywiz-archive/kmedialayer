@@ -5,6 +5,7 @@ object KmlGenBuffer {
         printToFile("kmedialayer/android/src/main/kotlin/com/soywiz/kmedialayer/KmlBufferAndroid.kt") { generateJvm() }
         printToFile("kmedialayer/jvm/src/main/kotlin/com/soywiz/kmedialayer/KmlBufferJvm.kt") { generateJvm() }
         printToFile("kmedialayer/js/src/main/kotlin/com/soywiz/kmedialayer/KmlBufferJs.kt") { generateJs() }
+        printToFile("kmedialayer/native/src/main/kotlin/com/soywiz/kmedialayer/KmlBufferNative.kt") { generateNative() }
     }
 
     open class KmlType(val name: String, val size: Int) {
@@ -118,6 +119,30 @@ object KmlGenBuffer {
         println("@Suppress(\"USELESS_CAST\") val KmlBuffer.arrayShort: Int16Array get() = (baseBuffer as KmlBufferBase).arrayShort")
         println("@Suppress(\"USELESS_CAST\") val KmlBuffer.arrayInt: Int32Array get() = (baseBuffer as KmlBufferBase).arrayInt")
         println("@Suppress(\"USELESS_CAST\") val KmlBuffer.arrayFloat: Float32Array get() = (baseBuffer as KmlBufferBase).arrayFloat")
+        println("")
+    }
+
+    fun Printer.generateNative() {
+        println("package com.soywiz.kmedialayer")
+        println("")
+        println("import kotlinx.cinterop.*")
+        println("")
+        println("private fun roundUp(n: Int, m: Int) = if (n >= 0) ((n + m - 1) / m) * m else (n / m) * m")
+        println("")
+        println("actual class KmlBufferBase private constructor(val data: ByteArray) : KmlBuffer {")
+        for (type in types) {
+            println("    val data${type.name}: ${type.name}Array = data.uncheckedCast()")
+        }
+        println("    actual override val baseBuffer: KmlBufferBase = this")
+        println("    actual val size: Int = data.size")
+        println("    actual constructor(size: Int) : this(ByteArray(roundUp(size, 8)))")
+        println("")
+        for (type in types) {
+            val tname = type.name
+            println("    actual inline fun get$tname(index: Int): $tname = data$tname[index]")
+            println("    actual inline fun set$tname(index: Int, value: $tname): Unit { data$tname[index] = value }")
+        }
+        println("}")
         println("")
     }
 }

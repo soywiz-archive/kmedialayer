@@ -17,9 +17,7 @@ interface Job<T> {
     suspend fun await(): T
 }
 
-class CancellationToken(val cancel: Signal<Throwable> = Signal()) : CoroutineContext.Element {
-    override val key: CoroutineContext.Key<*> = KEY
-
+class CancellationToken(val cancel: Signal<Throwable> = Signal()) : AbstractCoroutineContextElement(KEY) {
     object KEY : CoroutineContext.Key<CancellationToken>
 }
 
@@ -228,4 +226,89 @@ enum class Key {
 interface KmlNativeImageData {
     val width: Int
     val height: Int
+}
+
+abstract class KmlBaseNoEventLoop : KmlBase() {
+    val timers = Timers()
+
+    override suspend fun delay(ms: Int): Unit = suspendCoroutineCancellable { c, cancel ->
+        val timer = timers.add(ms) { c.resume(Unit) }
+        cancel { timers.remove(timer) }
+    }
+
+    override fun enqueue(task: () -> Unit) {
+        timers.add(task)
+    }
+
+    fun <T : Any> runBlocking(context: CoroutineContext = EmptyCoroutineContext, callback: suspend () -> T): T {
+        var done = false
+        lateinit var resultValue: T
+        var resultException: Throwable? = null
+        callback.startCoroutine(object : Continuation<T> {
+            override val context: CoroutineContext = context
+            override fun resume(value: T) {
+                resultValue = value
+                done = true
+            }
+
+            override fun resumeWithException(exception: Throwable) {
+                println(exception)
+                resultException = exception
+                done = true
+            }
+        })
+        while (!done) {
+            sleep(1)
+            //Timers.check()
+            pollEvents()
+            timers.check()
+        }
+        if (resultException != null) throw resultException!!
+        return resultValue
+    }
+
+    abstract fun sleep(time: Int)
+    abstract fun pollEvents()
+
+    inner class Timers {
+        inner class Timer(val start: Double, val callback: () -> Unit)
+
+        private val tempTimers = arrayListOf<Timer>()
+        private val timers = arrayListOf<Timer>()
+
+        private val tempTasks = arrayListOf<() -> Unit>()
+        private val tasks = arrayListOf<() -> Unit>()
+
+        fun add(ms: Int, callback: () -> Unit): Timer {
+            return Timer(currentTimeMillis() + ms, callback).apply { timers += this }
+        }
+
+        fun add(callback: () -> Unit) {
+            tasks += callback
+        }
+
+        fun remove(timer: Timer) {
+            timers -= timer
+        }
+
+        fun check() {
+            // Timer events
+            val now = currentTimeMillis()
+            tempTimers.clear()
+            tempTimers.addAll(timers)
+            for (timer in tempTimers) {
+                if (now >= timer.start) {
+                    timer.callback()
+                    timers.remove(timer)
+                }
+            }
+            // Queued tasks
+            tempTasks.clear()
+            tempTasks.addAll(tasks)
+            tasks.clear()
+            for (task in tempTasks) {
+                task()
+            }
+        }
+    }
 }

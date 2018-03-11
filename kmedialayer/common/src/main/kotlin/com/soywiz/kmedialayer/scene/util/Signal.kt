@@ -9,8 +9,8 @@ class Signal<T> {
         private val arrayPool = Pool<ArrayList<(Any) -> Unit>>({ clear() }, { arrayListOf() })
     }
 
-    operator fun invoke(handler: (T) -> Unit): (T) -> Unit = synchronized(handlers) {
-        handlers += handler
+    operator fun invoke(handler: (T) -> Unit): (T) -> Unit {
+        synchronized(handlers) { handlers += handler }
         return handler
     }
 

@@ -12,9 +12,11 @@ class Pool<T>(private val reset: T.() -> Unit = {}, private val gen: () -> T) {
         }
     }
 
-    fun get(): T = synchronized(freed) {
-        if (freed.isEmpty()) free(gen())
-        val item = freed.removeAt(freed.size - 1)
+    fun get(): T {
+        val item = synchronized(freed) {
+            if (freed.isEmpty()) free(gen())
+            freed.removeAt(freed.size - 1)
+        }
         item.reset()
         return item
     }

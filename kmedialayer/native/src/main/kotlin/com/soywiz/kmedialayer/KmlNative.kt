@@ -4,11 +4,13 @@ import kotlinx.cinterop.*
 import platform.GLUT.*
 import platform.OpenGL.*
 import platform.OpenGLCommon.*
+import platform.posix.*
 
 private lateinit var globalListener: KMLWindowListener
+private val glNative: KmlGlNative by lazy { KmlGlNative() }
 
-actual object Kml {
-    actual fun createWindow(config: WindowConfig, listener: KMLWindowListener) {
+object KmlBaseNative : KmlBaseNoEventLoop() {
+    override fun application(windowConfig: WindowConfig, listener: KMLWindowListener) {
         globalListener = listener
 
         memScoped {
@@ -21,14 +23,14 @@ actual object Kml {
 
         // Set window size
         //glutSetOption(GLUT_ACTION_ON_WINDOW_CLOSE, GLUT_ACTION_GLUTMAINLOOP_RETURNS);
-        glutInitWindowSize(config.width, config.height)
+        glutInitWindowSize(windowConfig.width, windowConfig.height)
         glutInitWindowPosition(
-            (glutGet(GLUT_SCREEN_WIDTH)-config.width)/2,
-            (glutGet(GLUT_SCREEN_HEIGHT)-config.height)/2
+            (glutGet(GLUT_SCREEN_WIDTH)-windowConfig.width)/2,
+            (glutGet(GLUT_SCREEN_HEIGHT)-windowConfig.height)/2
         )
 
         // create Window
-        glutCreateWindow(config.title)
+        glutCreateWindow(windowConfig.title)
 
         // register Display Function
         glutDisplayFunc(staticCFunction(::onDisplay))
@@ -39,36 +41,56 @@ actual object Kml {
         // register Idle Function
         glutIdleFunc(staticCFunction(::onDisplay))
 
-        listener.init(KmlGl)
+        runBlocking {
+            listener.init(glNative)
+        }
 
         // run GLUT mainloop
         glutMainLoop()
         //glutMainLoopEvent()
     }
+
+    override fun currentTimeMillis(): Double = kotlin.system.getTimeMillis().toDouble()
+
+    override fun sleep(time: Int) {
+        usleep(time * 1000)
+    }
+
+    override fun pollEvents() {
+    }
+
+    override suspend fun decodeImage(path: String): KmlNativeImageData {
+        TODO("KmlBase.decodeImage(String)")
+    }
+
+    override suspend fun decodeImage(data: ByteArray): KmlNativeImageData {
+        TODO("KmlBase.decodeImage(ByteArray)")
+    }
+
+    override suspend fun loadFileBytes(path: String, range: LongRange?): ByteArray {
+        TODO("KmlBase.loadFileBytes")
+    }
+
+    override suspend fun writeFileBytes(path: String, data: ByteArray, offset: Long?): Unit {
+        TODO("KmlBase.writeFileBytes")
+    }
 }
 
+actual val Kml: KmlBase = KmlBaseNative
+
 private fun onDisplay() {
-    globalListener.render(KmlGl)
+    globalListener.render(glNative)
     glutSwapBuffers()
 }
 
-private var mouseX = 0
-private var mouseY = 0
-private var mouseButtons = 0
-
 private fun onMouseButton(button: Int, state: Int, x: Int, y: Int) {
-    mouseX = x
-    mouseY = y
-    if (state == GLUT_DOWN) {
-        mouseButtons = mouseButtons or (1 shl button)
-    } else {
-        mouseButtons = mouseButtons and (1 shl button).inv()
-    }
-    globalListener.mouseUpdate(mouseX, mouseY, mouseButtons)
+    globalListener.mouseUpdateButton(button, state == GLUT_DOWN)
 }
 
 private fun onMouseMotion(x: Int, y: Int) {
-    mouseX = x
-    mouseY = y
-    globalListener.mouseUpdate(mouseX, mouseY, mouseButtons)
+    globalListener.mouseUpdateMove(x, y)
+}
+
+class KmlNativeNativeImageData(override val width: Int, override val height: Int, val data: KmlBuffer) : KmlNativeImageData {
+
 }

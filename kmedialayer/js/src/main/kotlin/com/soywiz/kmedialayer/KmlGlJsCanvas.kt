@@ -9,7 +9,7 @@ import org.khronos.webgl.*
 import kotlin.math.*
 
 class KmlGlJsCanvas(val canvas: HTMLCanvasElement) : KmlGl() {
-    val gl = canvas.getContext("webgl", js("({'antialias':false})")) as WebGLRenderingContext
+    val gl = canvas.getContext("webgl") as WebGLRenderingContext
     private val items = arrayOfNulls<Any>(8 * 1024)
     private val freeList = (1 until items.size).reversed().toMutableList()
     private fun <T> T.alloc(): Int = run { if (this.asDynamic().id === undefined) { val index = freeList.removeAt(freeList.size - 1); items[index] = this; (this.asDynamic()).id = index; }; this.asDynamic().id.unsafeCast<Int>() }
