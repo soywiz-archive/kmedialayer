@@ -5,8 +5,7 @@
 package com.soywiz.kmedialayer
 
 import kotlinx.cinterop.*
-import platform.OpenGL.*
-import platform.OpenGLCommon.*
+import platform.gles2.*
 import platform.posix.*
 
 class KmlGlNative : KmlGl() {
@@ -27,7 +26,7 @@ class KmlGlNative : KmlGl() {
     override fun checkFramebufferStatus(target: Int): Int = glCheckFramebufferStatus(target)
     override fun clear(mask: Int): Unit = glClear(mask)
     override fun clearColor(red: Float, green: Float, blue: Float, alpha: Float): Unit = glClearColor(red, green, blue, alpha)
-    override fun clearDepthf(d: Float): Unit = glClearDepth(d.narrowFloat())
+    override fun clearDepthf(d: Float): Unit = glClearDepthf(d)
     override fun clearStencil(s: Int): Unit = glClearStencil(s)
     override fun colorMask(red: Boolean, green: Boolean, blue: Boolean, alpha: Boolean): Unit = glColorMask(red.narrow(), green.narrow(), blue.narrow(), alpha.narrow())
     override fun compileShader(shader: Int): Unit = glCompileShader(shader)
@@ -46,7 +45,7 @@ class KmlGlNative : KmlGl() {
     override fun deleteTextures(n: Int, items: KmlBuffer): Unit = glDeleteTextures(n, items.unsafeAddress().uncheckedCast())
     override fun depthFunc(func: Int): Unit = glDepthFunc(func)
     override fun depthMask(flag: Boolean): Unit = glDepthMask(flag.narrow())
-    override fun depthRangef(n: Float, f: Float): Unit = glDepthRange(n.narrowFloat(), f.narrowFloat())
+    override fun depthRangef(n: Float, f: Float): Unit = glDepthRangef(n, f)
     override fun detachShader(program: Int, shader: Int): Unit = glDetachShader(program, shader)
     override fun disable(cap: Int): Unit = glDisable(cap)
     override fun disableVertexAttribArray(index: Int): Unit = glDisableVertexAttribArray(index)

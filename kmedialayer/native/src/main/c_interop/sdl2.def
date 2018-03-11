@@ -7,3 +7,5 @@ compilerOpts = -D_POSIX_SOURCE
 compilerOpts.osx =
 compilerOpts.linux = -D_REENTRANT
 compilerOpts.ios =
+
+linkerOpts.iphone = -framework Foundation -framework UIKit -framework GLKit -framework OpenGLES

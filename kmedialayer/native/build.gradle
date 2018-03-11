@@ -1,12 +1,14 @@
 apply plugin: 'konan'
 
-def includeIphone = false
+//def includeIphone = false
+def includeIphone = true
 //konan.targets = ['iphone', 'iphone_sim', 'macbook', 'linux', 'raspberrypi', 'android_arm32', 'android_arm64', 'wasm32']
-//konan.targets = ['iphone', 'macbook']
-konan.targets = ['macbook']
-//konan.targets = ['macbook']
-//konan.targets = ['iphone']
-//konan.targets = ['iphone', 'iphone_sim', 'macbook', 'linux', 'raspberrypi', 'android_arm32', 'android_arm64']
+
+if (includeIphone) {
+	konan.targets = ['iphone', 'macbook']
+} else {
+	konan.targets = ['macbook']
+}
 
 konanArtifacts {
 	interop ('sdl2') {
@@ -25,6 +27,7 @@ konanArtifacts {
 		// ./iosbuild.sh
 		// copy SDL2-2.0.8/build-scripts/platform to ${System.getProperty('user.home')}/ios-dev/SDL2/platform
 		if (includeIphone) {
+			//println("${System.getProperty('user.home')}/ios-dev/SDL2/platform/arm64-ios/include/SDL2")
 			target 'iphone', {
 				includeDirs "${System.getProperty('user.home')}/ios-dev/SDL2/platform/arm64-ios/include/SDL2"
 			}
@@ -105,6 +108,24 @@ konanArtifacts {
 
 		if (includeIphone) {
 			target 'iphone', {
+				linkerOpts "-F /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS.sdk/System/Library/Frameworks " +
+						"-L${System.getProperty('user.home')}/ios-dev/SDL2/platform/arm64-ios/lib " +
+						"-L${System.getProperty('user.home')}/ios-dev/SDL2_image/Release-iphoneos " +
+						"-framework AVFoundation " +
+						"-framework GameController " +
+						"-framework Foundation " +
+						"-framework UIKit " +
+						"-framework OpenGLES " +
+						"-framework QuartzCore " +
+						"-framework MobileCoreServices " +
+						"-framework CoreAudio " +
+						"-framework CoreData " +
+						"-framework AudioToolbox " +
+						"-framework CoreGraphics " +
+						"-framework CoreMotion " +
+						"-framework ImageIO " +
+						"-lSDL2 " +
+						"-lSDL2_image"
 				srcDir "src/main/kotlin_iphone"
 			}
 		}
