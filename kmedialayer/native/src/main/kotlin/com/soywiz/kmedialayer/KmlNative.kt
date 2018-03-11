@@ -5,64 +5,129 @@ import platform.GLUT.*
 import platform.OpenGL.*
 import platform.OpenGLCommon.*
 import platform.posix.*
+import sdl2.*
 
 private lateinit var globalListener: KMLWindowListener
 private val glNative: KmlGlNative by lazy { KmlGlNative() }
 
 object KmlBaseNative : KmlBaseNoEventLoop() {
+    fun get_SDL_Error() = SDL_GetError()!!.toKString()
+    var window: CPointer<SDL_Window>? = null
+    var glcontext: SDL_GLContext? = null
+    var running = true
+
     override fun application(windowConfig: WindowConfig, listener: KMLWindowListener) {
         globalListener = listener
 
-        memScoped {
-            val argc = alloc<IntVar>().apply { value = 0 }
-            glutInit(argc.ptr, null) // TODO: pass real args
+        if (SDL_Init(SDL_INIT_EVERYTHING) != 0) {
+            println("SDL_Init Error: ${get_SDL_Error()}")
+            throw Error()
         }
 
-        // Display Mode
-        glutInitDisplayMode(GLUT_RGB or GLUT_DOUBLE or GLUT_DEPTH)
+        val platform = SDL_GetPlatform()!!.toKString()
+        var displayWidth = 0
+        var displayHeight = 0
 
-        // Set window size
-        //glutSetOption(GLUT_ACTION_ON_WINDOW_CLOSE, GLUT_ACTION_GLUTMAINLOOP_RETURNS);
-        glutInitWindowSize(windowConfig.width, windowConfig.height)
-        glutInitWindowPosition(
-            (glutGet(GLUT_SCREEN_WIDTH)-windowConfig.width)/2,
-            (glutGet(GLUT_SCREEN_HEIGHT)-windowConfig.height)/2
+        memScoped {
+            val displayMode = alloc<SDL_DisplayMode>()
+            if (SDL_GetCurrentDisplayMode(0, displayMode.ptr.reinterpret()) != 0) {
+                println("SDL_GetCurrentDisplayMode Error: ${get_SDL_Error()}")
+                SDL_Quit()
+                throw Error()
+            }
+            displayWidth = displayMode.w
+            displayHeight = displayMode.h
+        }
+
+        window = SDL_CreateWindow(
+            windowConfig.title,
+            SDL_WINDOWPOS_CENTERED,
+            SDL_WINDOWPOS_CENTERED,
+            windowConfig.width,
+            windowConfig.height,
+            SDL_WINDOW_OPENGL or SDL_WINDOW_RESIZABLE
         )
+        if (window == null) {
+            println("SDL_CreateWindow Error: ${get_SDL_Error()}")
+            SDL_Quit()
+            throw Error()
+        }
 
-        // create Window
-        glutCreateWindow(windowConfig.title)
-
-        // register Display Function
-        glutDisplayFunc(staticCFunction(::onDisplay))
-        glutReshapeFunc(staticCFunction(::onReshape))
-        glutMouseFunc(staticCFunction(::onMouseButton))
-        glutMotionFunc(staticCFunction(::onMouseMotion));
-        glutPassiveMotionFunc(staticCFunction(::onMouseMotion));
-        //glutKeyboardFunc(staticCFunction(::onKeyboardDown))
-        //glutKeyboardUpFunc(staticCFunction(::onKeyboardUp))
-
-        glutSpecialFunc(staticCFunction(::onKeyboardDown))
-        glutSpecialUpFunc(staticCFunction(::onKeyboardUp))
-
-        // register Idle Function
-        glutIdleFunc(staticCFunction(::onDisplay))
+        glcontext = SDL_GL_CreateContext(window);
 
         runBlocking {
             listener.init(glNative)
         }
 
-        // run GLUT mainloop
-        glutMainLoop()
-        //glutMainLoopEvent()
+        // now you can make GL calls.
+        try {
+            loop@ while (running) {
+                globalListener.render(glNative)
+                SDL_GL_SwapWindow(window);
+                SDL_Delay(1000 / 60)
+                pollEvents()
+                timers.check()
+            }
+        } finally {
+            SDL_GL_DeleteContext(glcontext);
+            SDL_DestroyWindow(window)
+            SDL_Quit()
+        }
     }
 
     override fun currentTimeMillis(): Double = kotlin.system.getTimeMillis().toDouble()
 
     override fun sleep(time: Int) {
-        usleep(time * 1000)
+        SDL_Delay(time)
     }
 
     override fun pollEvents() {
+        memScoped {
+            val event = alloc<SDL_Event>()
+            loop@ while (SDL_PollEvent(event.ptr.reinterpret()) != 0) {
+                val eventType = event.type
+                when (eventType) {
+                    SDL_QUIT -> {
+                        running = false
+                    }
+                    SDL_KEYDOWN, SDL_KEYUP -> {
+                        val keyboardEvent = event.ptr.reinterpret<SDL_KeyboardEvent>().pointed
+                        val mod = keyboardEvent.keysym.mod
+                        val scancode = keyboardEvent.keysym.scancode
+                        val keycode = keyboardEvent.keysym.sym
+                        val key = KEYS[keycode] ?: Key.UNKNOWN
+                        val pressed = eventType == SDL_KEYDOWN
+                        println("key: $scancode: $key (pressed=$pressed)")
+                        globalListener.keyUpdate(key, pressed)
+                    }
+                    SDL_MOUSEBUTTONDOWN, SDL_MOUSEBUTTONUP, SDL_MOUSEMOTION -> {
+                        val mouseEvent = event.ptr.reinterpret<SDL_MouseButtonEvent>().pointed
+                        val x = mouseEvent.x.toInt()
+                        val y = mouseEvent.y.toInt()
+                        val button = mouseEvent.button.toInt()
+                        when (eventType) {
+                            SDL_MOUSEMOTION -> globalListener.mouseUpdateMove(x, y)
+                            SDL_MOUSEBUTTONUP -> globalListener.mouseUpdateButton(button, false)
+                            SDL_MOUSEBUTTONDOWN -> globalListener.mouseUpdateButton(button, true)
+                        }
+                    }
+                    SDL_WINDOWEVENT -> {
+                        val windowEventType = event.window.event
+                        println("SDL_WINDOWEVENT: $windowEventType")
+                        when (windowEventType.toInt()) {
+                            SDL_WindowEventID.SDL_WINDOWEVENT_RESIZED.value -> {
+                                println("RESIZED")
+                                val width = event.window.data1
+                                val height = event.window.data2
+                                glViewport(0, 0, width, height)
+                                globalListener.resized(width, height)
+                            }
+                        }
+                    }
+                }
+                //println("EVENT: $eventType")
+            }
+        }
     }
 
     override suspend fun decodeImage(data: ByteArray): KmlNativeImageData {
@@ -96,135 +161,109 @@ fun readBytes(fileName: String, range: LongRange?): ByteArray {
 
 actual val Kml: KmlBase = KmlBaseNative
 
-private fun onDisplay() {
-    globalListener.render(glNative)
-    glutSwapBuffers()
-}
-
-private fun onMouseButton(button: Int, state: Int, x: Int, y: Int) {
-    globalListener.mouseUpdateButton(button, state == GLUT_DOWN)
-}
-
-private fun onMouseMotion(x: Int, y: Int) {
-    globalListener.mouseUpdateMove(x, y)
-}
-
-private fun onReshape(width: Int, height: Int) {
-    glViewport(0, 0, width, height)
-    globalListener.resized(width, height)
-}
-
-private fun onKeyboardInternal(keyCode: Int, pressed: Boolean) {
-    val key = KEYS[keyCode.toInt() and 0xFF] ?: Key.UNKNOWN
-    println("$keyCode: $key: $pressed")
-    globalListener.keyUpdate(key, pressed)
-}
-
-private fun onKeyboardDown(keyCode: Int, x: Int, y: Int) = onKeyboardInternal(keyCode, true)
-private fun onKeyboardUp(keyCode: Int, x: Int, y: Int) = onKeyboardInternal(keyCode, false)
-
-
 private val KEYS = mapOf(
-    8 to Key.BACKSPACE,
-    9 to Key.TAB,
-    13 to Key.ENTER,
-    16 to Key.LEFT_SHIFT,
-    17 to Key.LEFT_CONTROL,
-    18 to Key.LEFT_ALT,
-    19 to Key.PAUSE,
-    20 to Key.CAPS_LOCK,
-    27 to Key.ESCAPE,
-    33 to Key.PAGE_UP,
-    34 to Key.PAGE_DOWN,
-    35 to Key.END,
-    36 to Key.HOME,
-    37 to Key.LEFT,
-    38 to Key.UP,
-    39 to Key.RIGHT,
-    40 to Key.DOWN,
-    45 to Key.INSERT,
-    46 to Key.DELETE,
-    48 to Key.N0,
-    49 to Key.N1,
-    50 to Key.N2,
-    51 to Key.N3,
-    52 to Key.N4,
-    53 to Key.N5,
-    54 to Key.N6,
-    55 to Key.N7,
-    56 to Key.N8,
-    57 to Key.N9,
-    65 to Key.A,
-    66 to Key.B,
-    67 to Key.C,
-    68 to Key.D,
-    69 to Key.E,
-    70 to Key.F,
-    71 to Key.G,
-    72 to Key.H,
-    73 to Key.I,
-    74 to Key.J,
-    75 to Key.K,
-    76 to Key.L,
-    77 to Key.M,
-    78 to Key.N,
-    79 to Key.O,
-    80 to Key.P,
-    81 to Key.Q,
-    82 to Key.R,
-    83 to Key.S,
-    84 to Key.T,
-    85 to Key.U,
-    86 to Key.V,
-    87 to Key.W,
-    88 to Key.X,
-    89 to Key.Y,
-    90 to Key.Z,
-    91 to Key.LEFT_SUPER,
-    92 to Key.RIGHT_SUPER,
-    93 to Key.SELECT_KEY,
-    96 to Key.KP_0,
-    97 to Key.KP_1,
-    98 to Key.KP_2,
-    99 to Key.KP_3,
-    100 to Key.KP_4,
-    101 to Key.KP_5,
-    102 to Key.KP_6,
-    103 to Key.KP_7,
-    104 to Key.KP_8,
-    105 to Key.KP_9,
-    106 to Key.KP_MULTIPLY,
-    107 to Key.KP_ADD,
-    109 to Key.KP_SUBTRACT,
-    110 to Key.KP_DECIMAL,
-    111 to Key.KP_DIVIDE,
-    112 to Key.F1,
-    113 to Key.F2,
-    114 to Key.F3,
-    115 to Key.F4,
-    116 to Key.F5,
-    117 to Key.F6,
-    118 to Key.F7,
-    119 to Key.F8,
-    120 to Key.F9,
-    121 to Key.F10,
-    122 to Key.F11,
-    123 to Key.F12,
-    144 to Key.NUM_LOCK,
-    145 to Key.SCROLL_LOCK,
-    186 to Key.SEMICOLON,
-    187 to Key.EQUAL,
-    188 to Key.COMMA,
-    189 to Key.UNDERLINE,
-    190 to Key.PERIOD,
-    191 to Key.SLASH,
-    192 to Key.GRAVE_ACCENT,
-    219 to Key.LEFT_BRACKET,
-    220 to Key.BACKSLASH,
-    221 to Key.RIGHT_BRACKET,
-    222 to Key.APOSTROPHE
+    SDLK_SPACE to Key.SPACE,
+    SDLK_BACKSPACE to Key.BACKSPACE,
+    SDLK_TAB to Key.TAB,
+    SDLK_RETURN to Key.ENTER,
+    -1 to Key.LEFT_SHIFT,
+    -1 to Key.LEFT_CONTROL,
+    -1 to Key.LEFT_ALT,
+    -1 to Key.PAUSE,
+    -1 to Key.CAPS_LOCK,
+    SDLK_ESCAPE to Key.ESCAPE,
+    SDLK_PAGEUP to Key.PAGE_UP,
+    SDLK_PAGEDOWN to Key.PAGE_DOWN,
+    SDLK_END to Key.END,
+    SDLK_HOME to Key.HOME,
+    SDLK_LEFT to Key.LEFT,
+    SDLK_UP to Key.UP,
+    SDLK_RIGHT to Key.RIGHT,
+    SDLK_DOWN to Key.DOWN,
+    SDLK_INSERT to Key.INSERT,
+    SDLK_DELETE to Key.DELETE,
+    SDLK_0 to Key.N0,
+    SDLK_1 to Key.N1,
+    SDLK_2 to Key.N2,
+    SDLK_3 to Key.N3,
+    SDLK_4 to Key.N4,
+    SDLK_5 to Key.N5,
+    SDLK_6 to Key.N6,
+    SDLK_7 to Key.N7,
+    SDLK_8 to Key.N8,
+    SDLK_9 to Key.N9,
+    SDLK_a to Key.A,
+    SDLK_b to Key.B,
+    SDLK_c to Key.C,
+    SDLK_d to Key.D,
+    SDLK_e to Key.E,
+    SDLK_f to Key.F,
+    SDLK_g to Key.G,
+    SDLK_h to Key.H,
+    SDLK_i to Key.I,
+    SDLK_j to Key.J,
+    SDLK_k to Key.K,
+    SDLK_l to Key.L,
+    SDLK_m to Key.M,
+    SDLK_n to Key.N,
+    SDLK_o to Key.O,
+    SDLK_p to Key.P,
+    SDLK_q to Key.Q,
+    SDLK_r to Key.R,
+    SDLK_s to Key.S,
+    SDLK_t to Key.T,
+    SDLK_u to Key.U,
+    SDLK_v to Key.V,
+    SDLK_w to Key.W,
+    SDLK_x to Key.X,
+    SDLK_y to Key.Y,
+    SDLK_z to Key.Z,
+    -1 to Key.LEFT_SUPER,
+    -1 to Key.RIGHT_SUPER,
+    -1 to Key.SELECT_KEY,
+    SDLK_KP_0 to Key.KP_0,
+    SDLK_KP_1 to Key.KP_1,
+    SDLK_KP_2 to Key.KP_2,
+    SDLK_KP_3 to Key.KP_3,
+    SDLK_KP_4 to Key.KP_4,
+    SDLK_KP_5 to Key.KP_5,
+    SDLK_KP_6 to Key.KP_6,
+    SDLK_KP_7 to Key.KP_7,
+    SDLK_KP_8 to Key.KP_8,
+    SDLK_KP_9 to Key.KP_9,
+    -1 to Key.KP_MULTIPLY,
+    -1 to Key.KP_ADD,
+    -1 to Key.KP_SUBTRACT,
+    -1 to Key.KP_DECIMAL,
+    -1 to Key.KP_DIVIDE,
+    SDLK_F1 to Key.F1,
+    SDLK_F2 to Key.F2,
+    SDLK_F3 to Key.F3,
+    SDLK_F4 to Key.F4,
+    SDLK_F5 to Key.F5,
+    SDLK_F6 to Key.F6,
+    SDLK_F7 to Key.F7,
+    SDLK_F8 to Key.F8,
+    SDLK_F9 to Key.F9,
+    SDLK_F10 to Key.F10,
+    SDLK_F11 to Key.F11,
+    SDLK_F12 to Key.F12,
+    -1 to Key.NUM_LOCK,
+    -1 to Key.SCROLL_LOCK,
+    -1 to Key.SEMICOLON,
+    -1 to Key.EQUAL,
+    -1 to Key.COMMA,
+    -1 to Key.UNDERLINE,
+    -1 to Key.PERIOD,
+    -1 to Key.SLASH,
+    -1 to Key.GRAVE_ACCENT,
+    -1 to Key.LEFT_BRACKET,
+    -1 to Key.BACKSLASH,
+    -1 to Key.RIGHT_BRACKET,
+    -1 to Key.APOSTROPHE
 )
 
-class KmlNativeNativeImageData(override val width: Int, override val height: Int, val data: KmlBuffer) : KmlNativeImageData {
+class KmlNativeNativeImageData(override val width: Int, override val height: Int, val data: KmlBuffer) :
+    KmlNativeImageData {
 
 }
