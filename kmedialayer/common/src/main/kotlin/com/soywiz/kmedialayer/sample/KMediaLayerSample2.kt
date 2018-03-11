@@ -17,14 +17,13 @@ object KMediaLayerSample2 {
 
                 override suspend fun init() {
                     //val data = Kml.loadFileBytes("mini.png")
-                    val bmp = Bitmap32(32, 32).apply {
-                        for (x in 0 until 32) {
-                            this[x, x] = 0xFF007000.toInt()
-                            this[31 - x, x] = 0xFF007000.toInt()
-                        }
-                    }
-                    //val tex = texture("mini.png")
-                    val tex = texture(bmp)
+                    //val tex = texture(Bitmap32(32, 32).apply {
+                    //    for (x in 0 until 32) {
+                    //        this[x, x] = 0xFF007000.toInt()
+                    //        this[31 - x, x] = 0xFF007000.toInt()
+                    //    }
+                    //})
+                    val tex = texture("mini.png")
                     //val tex = texture(data)
                     //println(data.size)
                     root += ViewContainer().apply {

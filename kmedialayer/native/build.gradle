@@ -26,25 +26,74 @@ konanArtifacts {
 		}
 	}
 
-	program ('kmedialayer-native') {
-		enableMultiplatform true
-		enableOptimizations true
+	interop ('sdl2_image') {
+		defFile 'src/main/c_interop/sdl2_image.def'
+		packageName 'sdl2_image'
+		//packageName 'sdl2'
+
 		libraries {
 			artifact 'sdl2'
 		}
 
 		target 'macbook', {
-			linkerOpts "-F ${System.getProperty("user.home")}/Library/Frameworks -F /Library/Frameworks -framework SDL2"
+			// ln -s /Library/Frameworks/SDL2.frameworks/Headers /usr/local/include/SDL2
+			includeDirs '/Library/Frameworks/SDL2_image.framework/Headers',
+				'/Library/Frameworks/SDL2.framework/Headers',
+				"${System.getProperty("user.home")}/Library/Frameworks/SDL2.framework/Headers",
+				"${System.getProperty("user.home")}/Library/Frameworks/SDL2_image.framework/Headers",
+				'/opt/local/include/',
+				'/usr/local/include/',
+				'/opt/local/include/SDL2_image',
+				'/usr/local/include/SDL2_image'
+		}
+
+		target 'linux', {
+			includeDirs '/usr/include/SDL2_image',
+					'/usr/include/SDL2'
+		}
+
+		target 'raspberrypi', {
+			includeDirs "${System.getProperty("user.home")}/.konan/dependencies/target-sysroot-1-raspberrypi/usr/include/SDL2_image",
+					"${System.getProperty("user.home")}/.konan/dependencies/target-sysroot-1-raspberrypi/usr/include/SDL2"
+		}
+	}
+
+	program ('kmedialayer-native') {
+		enableMultiplatform true
+		enableOptimizations true
+
+		libraries {
+			artifact 'sdl2'
+			artifact 'sdl2_image'
+		}
+
+		target 'macbook', {
+			linkerOpts "-F ${System.getProperty("user.home")}/Library/Frameworks -F /Library/Frameworks -framework SDL2 -framework SDL2_image"
 			// Use this line instead of the previous one if you've got a 'No SDL-framework' error.
 			//linkerOpts "-L/opt/local/lib -L/usr/local/lib -lSDL2"
 		}
 
 		target 'linux', {
-			linkerOpts '-L/usr/lib/x86_64-linux-gnu -lSDL2'
+			linkerOpts '-L/usr/lib/x86_64-linux-gnu -lSDL2 -lSDL2_image'
 		}
 
 		target 'raspberrypi', {
-			linkerOpts '-lSDL2'
+			linkerOpts '-lSDL2 -lSDL2_image'
+		}
+	}
+}
+
+compileKonan {
+	doLast {
+		konanArtifacts['kmedialayer-native'].forEach() { task ->
+			copy {
+				from 'src/main/resources'
+				into task.artifact.parentFile
+			}
+			copy {
+				from '../common/src/main/resources'
+				into task.artifact.parentFile
+			}
 		}
 	}
 }

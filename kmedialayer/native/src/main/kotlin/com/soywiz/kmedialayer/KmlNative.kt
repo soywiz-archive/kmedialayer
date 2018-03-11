@@ -6,6 +6,7 @@ import platform.OpenGL.*
 import platform.OpenGLCommon.*
 import platform.posix.*
 import sdl2.*
+import sdl2_image.*
 
 private lateinit var globalListener: KMLWindowListener
 private val glNative: KmlGlNative by lazy { KmlGlNative() }
@@ -97,7 +98,7 @@ object KmlBaseNative : KmlBaseNoEventLoop() {
                         val keycode = keyboardEvent.keysym.sym
                         val key = KEYS[keycode] ?: Key.UNKNOWN
                         val pressed = eventType == SDL_KEYDOWN
-                        println("key: $scancode: $key (pressed=$pressed)")
+                        //println("key: $scancode: $key (pressed=$pressed)")
                         globalListener.keyUpdate(key, pressed)
                     }
                     SDL_MOUSEBUTTONDOWN, SDL_MOUSEBUTTONUP, SDL_MOUSEMOTION -> {
@@ -131,7 +132,23 @@ object KmlBaseNative : KmlBaseNoEventLoop() {
     }
 
     override suspend fun decodeImage(data: ByteArray): KmlNativeImageData {
-        TODO("KmlBase.decodeImage(ByteArray)")
+        //println("Decoding image of size: ${data.size}")
+        if (data.size == 0) throw RuntimeException("Can't decode image of size 0")
+        return memScoped {
+            val dataPin = data.pin()
+            val rw = SDL_RWFromConstMem(dataPin.addressOf(0), data.size)
+            val imgRaw = IMG_Load_RW(rw.uncheckedCast(), 1)
+            //val img = SDL_ConvertSurfaceFormat(imgRaw.uncheckedCast(), SDL_PIXELFORMAT_RGBA8888, 0)!!
+            //val img = SDL_ConvertSurfaceFormat(imgRaw.uncheckedCast(), SDL_PIXELFORMAT_ARGB8888, 0)!!
+            val img = SDL_ConvertSurfaceFormat(imgRaw.uncheckedCast(), SDL_PIXELFORMAT_ABGR8888, 0)!!
+            SDL_FreeSurface(img)
+            val width = img[0].w
+            val height = img[0].h
+            val pixels = img[0].pixels!!.readBytes(width * height * 4)
+            SDL_FreeSurface(imgRaw.uncheckedCast())
+            dataPin.unpin()
+            KmlNativeNativeImageData(width, height, pixels.toByteBuffer().asIntBuffer())
+        }
     }
 
     override suspend fun loadFileBytes(path: String, range: LongRange?): ByteArray {
@@ -147,12 +164,16 @@ fun readBytes(fileName: String, range: LongRange?): ByteArray {
     val file = fopen(fileName, "rb") ?: throw RuntimeException("Can't open file $fileName")
     fseek(file, 0, SEEK_END)
     val endPos = ftell(file)
+    //println("endPos: $endPos")
     val start = range?.start ?: 0L
     val count = range?.endInclusive?.minus(1) ?: (endPos - start)
-    fseek(file, start.narrow(), SEEK_CUR)
+    fseek(file, start.narrow(), SEEK_SET)
+    //println("seek: ${start}")
     val bytes = memScoped {
         val ptr = allocArray<ByteVar>(count)
         val readCount = fread(ptr, 1, count.narrow(), file).toInt()
+        //println("count: ${count}")
+        //println("readCount: $readCount")
         ptr.readBytes(readCount)
     }
     fclose(file)
