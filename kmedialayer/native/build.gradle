@@ -6,51 +6,46 @@ konan.targets = ['macbook']
 //konan.targets = ['iphone', 'iphone_sim', 'macbook', 'linux', 'raspberrypi', 'android_arm32', 'android_arm64']
 
 konanArtifacts {
-	/*
-    interop('mytest') {
-        defFile 'src/main/c_interop/mytest.def'
-    }
+	interop ('sdl') {
+		defFile 'src/main/c_interop/sdl.def'
+		packageName 'sdl'
 
-	library('kmedialayer') {
-		enableMultiplatform true
-
-        libraries {
-            artifact 'mytest'
-        }
-
-		target('linux') {
+		target 'macbook', {
+			includeDirs '/Library/Frameworks/SDL2.framework/Headers',
+					"${System.getProperty("user.home")}/Library/Frameworks/SDL2.framework/Headers",
+					'/opt/local/include/SDL2',
+					'/usr/local/include/SDL2'
 		}
 
-		target('macbook') {
+		target 'linux', {
+			includeDirs '/usr/include/SDL2'
+		}
+
+		target 'raspberrypi', {
+			includeDirs "${System.getProperty("user.home")}/.konan/dependencies/target-sysroot-1-raspberrypi/usr/include/SDL2"
 		}
 	}
 
-	program('kmedialayer-native-test') {
-		srcDir 'src/test/kotlin'
-		commonSourceSet 'test'
-		libraries {
-			artifact 'kmedialayer'
-		}
-		extraOpts '-tr'
-	}
-	*/
-
-	//library('kmedialayer') {
-	//	enableMultiplatform true
-//
-	//	target('macbook') {
-	//	}
-	//}
-
-	program('kmedialayer-native') {
+	program ('kmedialayer-native') {
 		enableMultiplatform true
 		enableOptimizations true
+		libraries {
+			artifact 'sdl'
+		}
 
-		//srcDir 'src/main/kotlin'
+		target 'macbook', {
+			linkerOpts "-F ${System.getProperty("user.home")}/Library/Frameworks -F /Library/Frameworks -framework SDL2"
+			// Use this line instead of the previous one if you've got a 'No SDL-framework' error.
+			//linkerOpts "-L/opt/local/lib -L/usr/local/lib -lSDL2"
+		}
 
-		//libraries {
-		//	artifact 'kmedialayer'
-		//}
+		target 'linux', {
+			linkerOpts '-L/usr/lib/x86_64-linux-gnu -lSDL2'
+		}
+
+		target 'raspberrypi', {
+			linkerOpts '-lSDL2'
+		}
 	}
 }
 
