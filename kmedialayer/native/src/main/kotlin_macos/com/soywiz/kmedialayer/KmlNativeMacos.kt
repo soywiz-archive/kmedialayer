@@ -244,6 +244,10 @@ private class MyAppDelegate(val handler: MyAppHandler, val windowConfig: WindowC
         }
     }
 
+    override fun applicationShouldTerminateAfterLastWindowClosed(app: NSApplication): Boolean {
+        println("applicationShouldTerminateAfterLastWindowClosed")
+        return true
+    }
     override fun applicationWillFinishLaunching(notification: NSNotification) {
         println("applicationWillFinishLaunching")
         window.makeKeyAndOrderFront(this)
@@ -255,9 +259,14 @@ private class MyAppDelegate(val handler: MyAppHandler, val windowConfig: WindowC
 
 
         openglView?.openGLContext?.makeCurrentContext()
-        handler.init(openglView?.openGLContext)
-        handler.render(openglView?.openGLContext)
-        appDelegate.timer = NSTimer.scheduledTimerWithTimeInterval(1.0 / 60.0, true, ::timer)
+        try {
+            handler.init(openglView?.openGLContext)
+            handler.render(openglView?.openGLContext)
+            appDelegate.timer = NSTimer.scheduledTimerWithTimeInterval(1.0 / 60.0, true, ::timer)
+        } catch (e: Throwable) {
+            e.printStackTrace()
+            window.close()
+        }
     }
 
 
@@ -332,14 +341,18 @@ class AppDelegate(val handler: MyAppHandler, val openGLView: AppNSOpenGLView, va
     var timer: NSTimer? = null
 
     override fun windowShouldClose(sender: NSWindow): Boolean {
-        openGLContext = null
         println("windowShouldClose")
-
-        timer?.invalidate()
-        timer = null
-
-        NSApplication.sharedApplication().stop(this)
         return true
+    }
+
+    override fun windowWillClose(notification: NSNotification) {
+        println("windowWillClose")
+        //openGLContext = null
+//
+        //timer?.invalidate()
+        //timer = null
+//
+        //NSApplication.sharedApplication().stop(this)
     }
 
     override fun windowDidResize(notification: NSNotification) {
