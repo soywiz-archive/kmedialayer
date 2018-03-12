@@ -87,7 +87,7 @@ object KmlBaseNativeMacos : KmlBaseNoEventLoop() {
 
             val ctx = CGBitmapContextCreate(
                 null, iwidth.toLong(), iheight.toLong(),
-                8, 0, colorSpace, CGImageAlphaInfo.kCGImageAlphaPremultipliedLast.value
+                8, iwidth.toLong() * 4, colorSpace, CGImageAlphaInfo.kCGImageAlphaPremultipliedLast.value
             )
 
             val gctx = NSGraphicsContext.graphicsContextWithCGContext(ctx, flipped = false)
@@ -321,7 +321,6 @@ class AppNSOpenGLView(val handler: MyAppHandler, frameRect: CValue<NSRect>, pixe
     }
 
     fun keyDownUp(event: NSEvent, pressed: Boolean) {
-        super.keyDown(event)
         val str = event.charactersIgnoringModifiers ?: "\u0000"
         val c = str.getOrNull(0) ?: '\u0000'
         val cc = c.toInt().toChar()

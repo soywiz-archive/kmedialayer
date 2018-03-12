@@ -17,6 +17,11 @@ interface Job<T> {
     suspend fun await(): T
 }
 
+// Just like promise pipe
+fun <T, R> Job<T>.then(callback: suspend (T) -> R): Job<R> = com.soywiz.kmedialayer.launch {
+    callback(this@then.await())
+}
+
 class CancellationToken(val cancel: Signal<Throwable> = Signal()) : AbstractCoroutineContextElement(KEY) {
     object KEY : CoroutineContext.Key<CancellationToken>
 }
@@ -28,16 +33,16 @@ public suspend inline fun <T> suspendCoroutineCancellable(crossinline block: (Co
 }
 
 class JobQueue(val context: CoroutineContext = EmptyCoroutineContext) {
-    val tasks = arrayListOf<suspend () -> Unit>()
-    var running = false
+    private val tasks = arrayListOf<suspend () -> Unit>()
+    private var running = false
     private var currentJob: Job<Unit>? = null
 
     private suspend fun run() {
         running = true
         try {
 
-            while (tasks.isNotEmpty()) {
-                val task = tasks.removeAt(0)
+            while (true) {
+                val task = synchronized(tasks) { if (tasks.isNotEmpty()) tasks.removeAt(0) else null } ?: break
                 val job = launch { task() }
                 currentJob = job
                 job.await()
@@ -49,6 +54,19 @@ class JobQueue(val context: CoroutineContext = EmptyCoroutineContext) {
         }
     }
 
+    /**
+     * Discards all the queued but non running tasks
+     */
+    fun discard(): JobQueue {
+        synchronized(tasks) { tasks.clear() }
+        return this
+    }
+
+    /**
+     * Discards all the queued tasks and cancels the running one, sending a complete signal.
+     * If complete=true, a tween for example will be set directly to the end step
+     * If complete=false, a tween for example will stop to the current step
+     */
     fun cancel(complete: Boolean = false): JobQueue {
         currentJob?.cancel(CancelException(complete))
         return this
@@ -57,7 +75,7 @@ class JobQueue(val context: CoroutineContext = EmptyCoroutineContext) {
     fun cancelComplete() = cancel(true)
 
     fun queue(callback: suspend () -> Unit) {
-        tasks += callback
+        synchronized(tasks) { tasks += callback }
         if (!running) launch { run() }
     }
 

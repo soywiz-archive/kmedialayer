@@ -7,5 +7,5 @@ class SceneTexture(val tex: KmlGlTex, val left: Float = 0f, val top: Float = 0f,
     val height = bottom - top
 
     val widthPixels get() = tex.width * width
-    val heightPixels get() = tex.width * height
+    val heightPixels get() = tex.height * height
 }

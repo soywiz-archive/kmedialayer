@@ -2,6 +2,7 @@ package com.soywiz.kmedialayer.scene
 
 import com.soywiz.kmedialayer.*
 
+// http://en.esotericsoftware.com/forum/Premultiply-Alpha-3132
 class SceneBatcher(val gl: KmlGl, initialWidth: Int, initialHeight: Int) {
     val QUADS = 1024
     val vertices = KmlFloatBuffer(QUADS * 4 * 4)
@@ -31,10 +32,8 @@ class SceneBatcher(val gl: KmlGl, initialWidth: Int, initialHeight: Int) {
             varying float vAlpha;
 
             void main(void) {
-                //gl_FragColor = vec4(0.8, 0.3, 0.4, 1.0);
-                //texture2D(utex, vTex);
                 gl_FragColor = texture2D(utex, vTex);
-                gl_FragColor.a *= vAlpha;
+                gl_FragColor.a *= vAlpha; // TODO: Depending on premultiplication we should multiply the whole color
             }
         """
     )

@@ -7,8 +7,11 @@ Supports:
 * Android (**NOT WORKING YET** *unsupported*)
 * JS (**webgl**)
 * JVM (**lwjgl3**)
-* NATIVE (**SDL2**)
-  * MACOS (**SDL2+GL**)
+* NATIVE
+  * MACOS (**Cocoa without additional dependencies**)
+  
+The intended normal workflow is to prototype using the JVM version,
+and then generate native executables or the JS version for the web.  
 
 ## Low level API:
 

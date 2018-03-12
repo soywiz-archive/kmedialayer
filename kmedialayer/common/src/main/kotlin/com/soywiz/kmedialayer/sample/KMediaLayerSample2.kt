@@ -28,8 +28,8 @@ object KMediaLayerSample2 {
                     //println(data.size)
                     root += ViewContainer().apply {
                         container = this
-                        scaleX = 2.0
-                        scaleY = 2.0
+                        //scaleX = 2.0
+                        //scaleY = 2.0
                         this += Image(tex).apply {
                             name = "image"
                             image = this
@@ -72,27 +72,33 @@ object KMediaLayerSample2 {
                         val image = this["image"]!!
                         image.keys {
                             down(Key.ENTER) {
-                                rotationQueue.queue {
+                                //rotationQueue.queue {
+                                rotationQueue.discard().queue {
                                     rotateBy(90.0, time = 0.3)
                                 }
                             }
                             down(Key.UP) {
-                                queue.cancelComplete().queue {
+                                queue.cancel(complete = true).queue {
+                                //queue.cancel().queue {
+                                //queue.discard().queue {
                                     moveBy(0.0, -32.0)
                                 }
                             }
                             down(Key.DOWN) {
-                                queue.cancelComplete().queue {
+                                //queue.discard().queue {
+                                queue.cancel(complete = true).queue {
                                     moveBy(0.0, 32.0)
                                 }
                             }
                             down(Key.LEFT) {
-                                queue.cancelComplete().queue {
+                                //queue.discard().queue {
+                                queue.cancel(complete = true).queue {
                                     moveBy(-32.0, 0.0)
                                 }
                             }
                             down(Key.RIGHT) {
-                                queue.cancelComplete().queue {
+                                //queue.discard().queue {
+                                queue.cancel(complete = true).queue {
                                     moveBy(+32.0, 0.0)
                                 }
                             }
