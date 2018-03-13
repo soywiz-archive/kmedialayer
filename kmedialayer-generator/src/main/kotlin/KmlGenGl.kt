@@ -6,14 +6,13 @@ object KmlGenGl {
         printToFile("kmedialayer/jvm/src/main/kotlin/com/soywiz/kmedialayer/KmlGlJvm.kt") { generateJvm() }
         printToFile("kmedialayer/js/src/main/kotlin/com/soywiz/kmedialayer/KmlGlJsCanvas.kt") { generateJs() }
         printToFile("kmedialayer/native/src/main/kotlin_macos/com/soywiz/kmedialayer/KmlGlNative.kt") {
-            generateNative(
-                NativeTarget.MACOS
-            )
+            generateNative(NativeTarget.MACOS)
         }
         printToFile("kmedialayer/native/src/main/kotlin_iphone/com/soywiz/kmedialayer/KmlGlNative.kt") {
-            generateNative(
-                NativeTarget.IPHONE
-            )
+            generateNative(NativeTarget.IPHONE)
+        }
+        printToFile("kmedialayer/native/src/main/kotlin_mingw/com/soywiz/kmedialayer/KmlGlNative.kt") {
+            generateNative(NativeTarget.WIN32)
         }
         //printToConsole { generateCommon() }
         //printToConsole { generateJvm() }
@@ -64,7 +63,7 @@ object KmlGenGl {
     }
 
     enum class NativeTarget {
-        MACOS, IPHONE
+        MACOS, IPHONE, WIN32
     }
 
     fun Printer.generateNative(target: NativeTarget) {
@@ -83,9 +82,11 @@ object KmlGenGl {
                 println("import platform.OpenGLCommon.*")
             }
             NativeTarget.IPHONE -> {
-                //println("import platform.OpenGLES2.*")
-                //println("import platform.gles2.OpenGLES2.*")
                 println("import platform.gles2.*")
+            }
+            NativeTarget.WIN32 -> {
+                println("import platform.opengl32.*")
+                println("import platform.windows.*")
             }
         }
         println("import platform.posix.*")
@@ -94,6 +95,7 @@ object KmlGenGl {
         for (func in OpenglDesc.functions) {
             val nativeName = when (target) {
                 NativeTarget.IPHONE -> func.name
+                NativeTarget.WIN32 -> func.name
                 else -> func.fname.nativeName
             }
             val call = func.nativeBody
@@ -101,6 +103,19 @@ object KmlGenGl {
             println("    override fun ${func.unprefixedName}(${func.args.joinToString(", ") { it.name + ": " + it.type.ktname }}): ${func.rettype.ktname} = $call")
         }
         println("}")
+
+        if (target == NativeTarget.WIN32) {
+            println("val OPENGL32_DLL_MODULE: HMODULE? by lazy { LoadLibraryA(\"opengl32.dll\") }")
+            println("fun wglGetProcAddressAny(name: String): PROC? = wglGetProcAddress(name) ?: GetProcAddress(OPENGL32_DLL_MODULE, name)")
+            for (func in OpenglDesc.functions) {
+                val name = func.name
+                val PROC = "PFN${name.toUpperCase()}PROC"
+                if (!func.core) {
+                    println("val $name: $PROC by lazy { wglGetProcAddressAny(\"$name\").uncheckedCast<$PROC>() }")
+                }
+            }
+        }
+
         println("")
     }
 
@@ -172,7 +187,8 @@ object OpenglDesc {
         val jsBody: String? = null,
         val androidBody: String? = null,
         val nativeBody: String? = null,
-        val jvmBody: String? = null
+        val jvmBody: String? = null,
+        val core: Boolean = false
     ) {
         val name = fname.name
         val unprefixedName = name.removePrefix("gl").decapitalize()
@@ -186,6 +202,13 @@ object OpenglDesc {
         constants[name] = Constant(name, value)
     }
 
+    fun Arguments(vararg args: Pair<String, GlType>) = args.map { Argument(it.first, it.second) }
+
+    fun add(func: Function) {
+        functions.add(func)
+    }
+
+    //@Deprecated(replaceWith = ReplaceWith("add(Function(name, rettype, Arguments(*args), jsBody = jsBody, androidBody = androidBody, nativeBody = nativeBody, jvmBody = jvmBody, core = core))"))
     fun function(
         rettype: GlType,
         name: FunctionName,
@@ -193,7 +216,8 @@ object OpenglDesc {
         jsBody: String? = null,
         androidBody: String? = null,
         nativeBody: String? = null,
-        jvmBody: String? = null
+        jvmBody: String? = null,
+        core: Boolean = false
     ) {
         functions.add(
             Function(
@@ -203,7 +227,8 @@ object OpenglDesc {
                 jsBody = jsBody,
                 androidBody = androidBody,
                 nativeBody = nativeBody,
-                jvmBody = jvmBody
+                jvmBody = jvmBody,
+                    core = core
             )
         )
     }
@@ -617,7 +642,7 @@ object OpenglDesc {
         function(GlVoid, FunctionName("glBindBuffer"), "target" to GlInt, "buffer" to GlBuffer)
         function(GlVoid, FunctionName("glBindFramebuffer"), "target" to GlInt, "framebuffer" to GlFramebuffer)
         function(GlVoid, FunctionName("glBindRenderbuffer"), "target" to GlInt, "renderbuffer" to GlRenderbuffer)
-        function(GlVoid, FunctionName("glBindTexture"), "target" to GlInt, "texture" to GlTexture)
+        function(GlVoid, FunctionName("glBindTexture"), "target" to GlInt, "texture" to GlTexture, core = true)
         function(
             GlVoid,
             FunctionName("glBlendColor"),
@@ -628,7 +653,7 @@ object OpenglDesc {
         )
         function(GlVoid, FunctionName("glBlendEquation"), "mode" to GlInt)
         function(GlVoid, FunctionName("glBlendEquationSeparate"), "modeRGB" to GlInt, "modeAlpha" to GlInt)
-        function(GlVoid, FunctionName("glBlendFunc"), "sfactor" to GlInt, "dfactor" to GlInt)
+        function(GlVoid, FunctionName("glBlendFunc"), "sfactor" to GlInt, "dfactor" to GlInt, core = true)
         function(
             GlVoid,
             FunctionName("glBlendFuncSeparate"),
@@ -656,14 +681,14 @@ object OpenglDesc {
             jsBody = "gl.bufferSubData(target, offset, data.arrayBuffer)" // @TODO: size
         )
         function(GlInt, FunctionName("glCheckFramebufferStatus"), "target" to GlInt)
-        function(GlVoid, FunctionName("glClear"), "mask" to GlInt)
+        function(GlVoid, FunctionName("glClear"), "mask" to GlInt, core = true)
         function(
             GlVoid,
             FunctionName("glClearColor"),
             "red" to GlFloat,
             "green" to GlFloat,
             "blue" to GlFloat,
-            "alpha" to GlFloat
+            "alpha" to GlFloat, core = true
         )
 
         function(
@@ -679,7 +704,7 @@ object OpenglDesc {
             "red" to GlBool,
             "green" to GlBool,
             "blue" to GlBool,
-            "alpha" to GlBool
+            "alpha" to GlBool, core = true
         )
         function(GlVoid, FunctionName("glCompileShader"), "shader" to GlShader)
         function(
@@ -721,7 +746,7 @@ object OpenglDesc {
             "y" to GlInt,
             "width" to GlInt,
             "height" to GlInt,
-            "border" to GlInt
+            "border" to GlInt, core = true
         )
 
         function(
@@ -734,12 +759,12 @@ object OpenglDesc {
             "x" to GlInt,
             "y" to GlInt,
             "width" to GlInt,
-            "height" to GlInt
+            "height" to GlInt, core = true
         )
 
         function(GlProgram, FunctionName("glCreateProgram"))
         function(GlShader, FunctionName("glCreateShader"), "type" to GlInt)
-        function(GlVoid, FunctionName("glCullFace"), "mode" to GlInt)
+        function(GlVoid, FunctionName("glCullFace"), "mode" to GlInt, core = true)
         function(
             GlVoid,
             FunctionName("glDeleteBuffers"),
@@ -768,20 +793,21 @@ object OpenglDesc {
             FunctionName("glDeleteTextures"),
             "n" to GlInt,
             "items" to GlIntPtr,
-            jsBody = jsBodyDelete("deleteTexture", "items")
+            jsBody = jsBodyDelete("deleteTexture", "items"), core = true
         )
-        function(GlVoid, FunctionName("glDepthFunc"), "func" to GlInt)
-        function(GlVoid, FunctionName("glDepthMask"), "flag" to GlBool)
+        function(GlVoid, FunctionName("glDepthFunc"), "func" to GlInt, core = true)
+        function(GlVoid, FunctionName("glDepthMask"), "flag" to GlBool, core = true)
         function(
             GlVoid,
             FunctionName("glDepthRangef", jsName = "glDepthRange", nativeName = "glDepthRange"),
             "n" to GlDouble,
-            "f" to GlDouble
+            "f" to GlDouble,
+                core = true
         )
         function(GlVoid, FunctionName("glDetachShader"), "program" to GlProgram, "shader" to GlShader)
-        function(GlVoid, FunctionName("glDisable"), "cap" to GlInt)
+        function(GlVoid, FunctionName("glDisable"), "cap" to GlInt, core = true)
         function(GlVoid, FunctionName("glDisableVertexAttribArray"), "index" to GlInt)
-        function(GlVoid, FunctionName("glDrawArrays"), "mode" to GlInt, "first" to GlInt, "count" to GlInt)
+        function(GlVoid, FunctionName("glDrawArrays"), "mode" to GlInt, "first" to GlInt, "count" to GlInt, core = true)
         function(
             GlVoid, FunctionName("glDrawElements"),
             "mode" to GlInt,
@@ -789,11 +815,12 @@ object OpenglDesc {
             "type" to GlInt,
             "indices" to GlSizeOrPointer
             //"indices" to GlVoidPtr
+                , core = true
         )
-        function(GlVoid, FunctionName("glEnable"), "cap" to GlInt)
+        function(GlVoid, FunctionName("glEnable"), "cap" to GlInt, core = true)
         function(GlVoid, FunctionName("glEnableVertexAttribArray"), "index" to GlInt)
-        function(GlVoid, FunctionName("glFinish"))
-        function(GlVoid, FunctionName("glFlush"))
+        function(GlVoid, FunctionName("glFinish"), core = true)
+        function(GlVoid, FunctionName("glFlush"), core = true)
         function(
             GlVoid,
             FunctionName("glFramebufferRenderbuffer"),
@@ -811,7 +838,7 @@ object OpenglDesc {
             "texture" to GlTexture,
             "level" to GlInt
         )
-        function(GlVoid, FunctionName("glFrontFace"), "mode" to GlInt)
+        function(GlVoid, FunctionName("glFrontFace"), "mode" to GlInt, core = true)
 
         function(
             GlVoid,
@@ -840,7 +867,7 @@ object OpenglDesc {
             FunctionName("glGenTextures"),
             "n" to GlInt,
             "textures" to GlIntPtr,
-            jsBody = jsBodyCreate("createTexture", "textures")
+            jsBody = jsBodyCreate("createTexture", "textures"), core = true
         )
         function(
             GlVoid,
@@ -891,7 +918,7 @@ object OpenglDesc {
             jsBody = "run { val prg = program.get<WebGLProgram>().asDynamic(); if (prg.uniforms === undefined) prg.uniforms = js(\"({})\"); if (prg.uniforms[name] === undefined) prg.uniforms[name] = gl.getUniformLocation(prg, name).alloc(); return prg.uniforms[name].unsafeCast<Int>() }"
         )
 
-        function(GlVoid, FunctionName("glGetBooleanv"), "pname" to GlInt, "data" to GlBoolPtr, jsBody = getBase("Int"))
+        function(GlVoid, FunctionName("glGetBooleanv"), "pname" to GlInt, "data" to GlBoolPtr, jsBody = getBase("Int"), core = true)
         function(
             GlVoid,
             FunctionName("glGetBufferParameteriv"),
@@ -900,8 +927,8 @@ object OpenglDesc {
             "params" to GlIntPtr,
             jsBody = "run { params.arrayInt[0] = gl.getBufferParameter(target, pname).unsafeCast<Int>() }"
         )
-        function(GlInt, FunctionName("glGetError"))
-        function(GlVoid, FunctionName("glGetFloatv"), "pname" to GlInt, "data" to GlFloatPtr, jsBody = getBase("Float"))
+        function(GlInt, FunctionName("glGetError"), core = true)
+        function(GlVoid, FunctionName("glGetFloatv"), "pname" to GlInt, "data" to GlFloatPtr, jsBody = getBase("Float"), core = true)
         function(
             GlVoid,
             FunctionName("glGetFramebufferAttachmentParameteriv"),
@@ -911,7 +938,7 @@ object OpenglDesc {
             "params" to GlIntPtr,
             jsBody = "run { params.arrayInt[0] = gl.getFramebufferAttachmentParameter(target, attachment, pname).unsafeCast<Int>() }"
         )
-        function(GlVoid, FunctionName("glGetIntegerv"), "pname" to GlInt, "data" to GlIntPtr, jsBody = getBase("Int"))
+        function(GlVoid, FunctionName("glGetIntegerv"), "pname" to GlInt, "data" to GlIntPtr, jsBody = getBase("Int"), core = true)
         function(
             GlVoid,
             FunctionName("glGetProgramInfoLog"),
@@ -985,7 +1012,7 @@ object OpenglDesc {
             GlString,
             FunctionName("glGetString"),
             "name" to GlInt,
-            jsBody = "gl.getParameter(name).unsafeCast<String>()"
+            jsBody = "gl.getParameter(name).unsafeCast<String>()", core = true
         )
         function(
             GlVoid,
@@ -1001,7 +1028,8 @@ object OpenglDesc {
             "target" to GlInt,
             "pname" to GlInt,
             "params" to GlIntPtr,
-            jsBody = "run { params.arrayInt[0] = gl.getTexParameter(target, pname).unsafeCast<Int>() }"
+            jsBody = "run { params.arrayInt[0] = gl.getTexParameter(target, pname).unsafeCast<Int>() }",
+                core = true
         )
         function(
             GlVoid,
@@ -1044,18 +1072,18 @@ object OpenglDesc {
             jsBody = "run { pointer.arrayInt[0] = gl.getVertexAttrib(index, pname).unsafeCast<Int>() }",
             androidBody = "TODO()"
         )
-        function(GlVoid, FunctionName("glHint"), "target" to GlInt, "mode" to GlInt)
+        function(GlVoid, FunctionName("glHint"), "target" to GlInt, "mode" to GlInt, core = true)
         function(GlBool, FunctionName("glIsBuffer"), "buffer" to GlBuffer)
-        function(GlBool, FunctionName("glIsEnabled"), "cap" to GlInt)
+        function(GlBool, FunctionName("glIsEnabled"), "cap" to GlInt, core = true)
         function(GlBool, FunctionName("glIsFramebuffer"), "framebuffer" to GlFramebuffer)
         function(GlBool, FunctionName("glIsProgram"), "program" to GlProgram)
         function(GlBool, FunctionName("glIsRenderbuffer"), "renderbuffer" to GlRenderbuffer)
         function(GlBool, FunctionName("glIsShader"), "shader" to GlShader)
-        function(GlBool, FunctionName("glIsTexture"), "texture" to GlTexture)
-        function(GlVoid, FunctionName("glLineWidth"), "width" to GlFloat)
+        function(GlBool, FunctionName("glIsTexture"), "texture" to GlTexture, core = true)
+        function(GlVoid, FunctionName("glLineWidth"), "width" to GlFloat, core = true)
         function(GlVoid, FunctionName("glLinkProgram"), "program" to GlProgram)
-        function(GlVoid, FunctionName("glPixelStorei"), "pname" to GlInt, "param" to GlInt)
-        function(GlVoid, FunctionName("glPolygonOffset"), "factor" to GlFloat, "units" to GlFloat)
+        function(GlVoid, FunctionName("glPixelStorei"), "pname" to GlInt, "param" to GlInt, core = true)
+        function(GlVoid, FunctionName("glPolygonOffset"), "factor" to GlFloat, "units" to GlFloat, core = true)
         function(
             GlVoid,
             FunctionName("glReadPixels"),
@@ -1065,7 +1093,7 @@ object OpenglDesc {
             "height" to GlInt,
             "format" to GlInt,
             "type" to GlInt,
-            "pixels" to GlVoidPtr
+            "pixels" to GlVoidPtr, core = true
         )
         function(GlVoid, FunctionName("glReleaseShaderCompiler"), jsBody = "Unit", nativeBody = "Unit")
         function(
@@ -1077,7 +1105,7 @@ object OpenglDesc {
             "height" to GlInt
         )
         function(GlVoid, FunctionName("glSampleCoverage"), "value" to GlFloat, "invert" to GlBool)
-        function(GlVoid, FunctionName("glScissor"), "x" to GlInt, "y" to GlInt, "width" to GlInt, "height" to GlInt)
+        function(GlVoid, FunctionName("glScissor"), "x" to GlInt, "y" to GlInt, "width" to GlInt, "height" to GlInt, core = true)
         function(
             GlVoid,
             FunctionName("glShaderBinary"),
@@ -1110,7 +1138,7 @@ object OpenglDesc {
                 }
                 }"""
         )
-        function(GlVoid, FunctionName("glStencilFunc"), "func" to GlInt, "ref" to GlInt, "mask" to GlInt)
+        function(GlVoid, FunctionName("glStencilFunc"), "func" to GlInt, "ref" to GlInt, "mask" to GlInt, core = true)
         function(
             GlVoid,
             FunctionName("glStencilFuncSeparate"),
@@ -1119,9 +1147,9 @@ object OpenglDesc {
             "ref" to GlInt,
             "mask" to GlInt
         )
-        function(GlVoid, FunctionName("glStencilMask"), "mask" to GlInt)
+        function(GlVoid, FunctionName("glStencilMask"), "mask" to GlInt, core = true)
         function(GlVoid, FunctionName("glStencilMaskSeparate"), "face" to GlInt, "mask" to GlInt)
-        function(GlVoid, FunctionName("glStencilOp"), "fail" to GlInt, "zfail" to GlInt, "zpass" to GlInt)
+        function(GlVoid, FunctionName("glStencilOp"), "fail" to GlInt, "zfail" to GlInt, "zpass" to GlInt, core = true)
         function(
             GlVoid,
             FunctionName("glStencilOpSeparate"),
@@ -1141,7 +1169,7 @@ object OpenglDesc {
             "border" to GlInt,
             "format" to GlInt,
             "type" to GlInt,
-            "pixels" to GlVoidPtr
+            "pixels" to GlVoidPtr, core = true
         )
 
         // JS NATIVE
@@ -1157,26 +1185,26 @@ object OpenglDesc {
             jsBody = "gl.texImage2D(target, level, internalformat, format, type, (data as KmlImgNativeImageData).img)",
             jvmBody = "glTexImage2D(target, level, internalformat, data.width, data.height, 0, format, type, (data as BufferedImageKmlNativeImageData).buffer)",
             nativeBody = "glTexImage2D(target, level, internalformat, data.width, data.height, 0, format, type, (data as KmlNativeNativeImageData).data.unsafeAddress().uncheckedCast())",
-            androidBody = "TODO()"
+            androidBody = "TODO()", core = true
         )
 
-        function(GlVoid, FunctionName("glTexParameterf"), "target" to GlInt, "pname" to GlInt, "param" to GlFloat)
+        function(GlVoid, FunctionName("glTexParameterf"), "target" to GlInt, "pname" to GlInt, "param" to GlFloat, core = true)
         function(
             GlVoid,
             FunctionName("glTexParameterfv"),
             "target" to GlInt,
             "pname" to GlInt,
             "params" to GlFloatPtr,
-            jsBody = "gl.texParameterf(target, pname, params.arrayFloat[0])"
+            jsBody = "gl.texParameterf(target, pname, params.arrayFloat[0])", core = true
         )
-        function(GlVoid, FunctionName("glTexParameteri"), "target" to GlInt, "pname" to GlInt, "param" to GlInt)
+        function(GlVoid, FunctionName("glTexParameteri"), "target" to GlInt, "pname" to GlInt, "param" to GlInt, core = true)
         function(
             GlVoid,
             FunctionName("glTexParameteriv"),
             "target" to GlInt,
             "pname" to GlInt,
             "params" to GlIntPtr,
-            jsBody = "gl.texParameteri(target, pname, params.arrayInt[0])"
+            jsBody = "gl.texParameteri(target, pname, params.arrayInt[0])", core = true
         )
         function(
             GlVoid,
@@ -1189,7 +1217,8 @@ object OpenglDesc {
             "height" to GlInt,
             "format" to GlInt,
             "type" to GlInt,
-            "pixels" to GlVoidPtr
+            "pixels" to GlVoidPtr,
+                core = true
         )
 
         fun jsUniformXfv(count: Int) = "gl.uniform${count}fv(location.get(), value.arrayFloat)"
@@ -1360,6 +1389,7 @@ object OpenglDesc {
             "pointer" to GlSizeOrPointer
         )
 
-        function(GlVoid, FunctionName("glViewport"), "x" to GlInt, "y" to GlInt, "width" to GlInt, "height" to GlInt)
+        function(GlVoid, FunctionName("glViewport"), "x" to GlInt, "y" to GlInt, "width" to GlInt, "height" to GlInt,
+                core = true)
     }
 }
