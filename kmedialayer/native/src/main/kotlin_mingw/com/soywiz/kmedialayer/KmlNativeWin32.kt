@@ -107,12 +107,7 @@ fun renderFunction() {
     glClearColor(0.2f, 0.4f, 0.6f, 1.0f)
     glClear(GL_COLOR_BUFFER_BIT)
     //initExtGLOnce()
-    val program = glCreateProgram()
-    println(program)
 }
-
-val glCreateProgram by lazy { wglGetProcAddress("glCreateProgram").uncheckedCast<PFNGLCREATEPROGRAMPROC>() }
-// ...
 
 fun resized(width: Int, height: Int) {
     println("RESIZED: $width, $height")

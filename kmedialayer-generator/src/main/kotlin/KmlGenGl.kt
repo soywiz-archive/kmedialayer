@@ -95,7 +95,7 @@ object KmlGenGl {
         for (func in OpenglDesc.functions) {
             val nativeName = when (target) {
                 NativeTarget.IPHONE -> func.name
-                NativeTarget.WIN32 -> func.name
+                NativeTarget.WIN32 -> func.fname.nativeName
                 else -> func.fname.nativeName
             }
             val call = func.nativeBody
@@ -107,8 +107,9 @@ object KmlGenGl {
         if (target == NativeTarget.WIN32) {
             println("val OPENGL32_DLL_MODULE: HMODULE? by lazy { LoadLibraryA(\"opengl32.dll\") }")
             println("fun wglGetProcAddressAny(name: String): PROC? = wglGetProcAddress(name) ?: GetProcAddress(OPENGL32_DLL_MODULE, name)")
+            println("val String.glstr: CPointer<GLcharVar> get() = this.cstr.uncheckedCast()")
             for (func in OpenglDesc.functions) {
-                val name = func.name
+                val name = func.fname.nativeName
                 val PROC = "PFN${name.toUpperCase()}PROC"
                 if (!func.core) {
                     println("val $name: $PROC by lazy { wglGetProcAddressAny(\"$name\").uncheckedCast<$PROC>() }")
@@ -241,8 +242,10 @@ object OpenglDesc {
         open fun toJSParam(param: String): String = param
         open fun toNative(param: String): String = param
         open fun toNativeIphone(param: String): String = toNative(param)
+        open fun toNativeWin32(param: String): String = toNative(param)
         fun toNative(param: String, platform: KmlGenGl.NativeTarget) = when (platform) {
             KmlGenGl.NativeTarget.IPHONE -> toNativeIphone(param)
+            KmlGenGl.NativeTarget.WIN32 -> toNativeWin32(param)
             else -> toNative(param)
         }
 
@@ -280,6 +283,7 @@ object OpenglDesc {
 
     object GlString : GlType("String") {
         override fun toNativeReturn(param: String): String = "($param)?.toKString() ?: \"\""
+        override fun toNativeWin32(param: String): String = "($param).glstr"
     }
 
     object GlNativeImageData : GlType("KmlNativeImageData") {
@@ -694,10 +698,11 @@ object OpenglDesc {
         function(
             GlVoid,
             FunctionName("glClearDepthf", jsName = "glClearDepth", nativeName = "glClearDepth"),
-            "d" to GlDouble
+            "d" to GlDouble,
+                core = true
         )
 
-        function(GlVoid, FunctionName("glClearStencil"), "s" to GlInt)
+        function(GlVoid, FunctionName("glClearStencil"), "s" to GlInt, core = true)
         function(
             GlVoid,
             FunctionName("glColorMask"),
@@ -1020,7 +1025,8 @@ object OpenglDesc {
             "target" to GlInt,
             "pname" to GlInt,
             "params" to GlFloatPtr,
-            jsBody = "run { params.arrayFloat[0] = gl.getTexParameter(target, pname).unsafeCast<Float>() }"
+            jsBody = "run { params.arrayFloat[0] = gl.getTexParameter(target, pname).unsafeCast<Float>() }",
+                core = true
         )
         function(
             GlVoid,
