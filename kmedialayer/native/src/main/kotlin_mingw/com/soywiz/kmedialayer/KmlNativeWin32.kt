@@ -10,7 +10,9 @@ import platform.posix.*
 //    runApp(MyAppHandler())
 //}
 actual val Kml: KmlBase = KmlBaseNativeWin32
-private val glNative: KmlGlNative by lazy { KmlGlNative() }
+
+//private val glNative: KmlGl by lazy { KmlGlNative() }
+private val glNative: KmlGl by lazy { LogKmlGlProxy(CheckErrorsKmlGlProxy(KmlGlNative())) }
 
 lateinit var nwindowConfig: WindowConfig
 var nlistener: KMLWindowListener? = null
@@ -70,7 +72,7 @@ object KmlBaseNativeWin32 : KmlBaseNoEventLoop() {
             }
         } catch (e: Throwable) {
             e.printStackTrace()
-            throw e
+            kotlin.system.exitProcess(-1)
         }
     }
 
@@ -108,7 +110,10 @@ fun renderFunction() {
         println("RENDER_NOT_INITIALIZED")
         return
     }
+    println("RENDER")
+
     nlistener?.render(glNative)
+
     //glClearColor(0.2f, 0.4f, 0.6f, 1.0f)
     //glClear(GL_COLOR_BUFFER_BIT)
 }
@@ -120,8 +125,8 @@ fun resized(width: Int, height: Int) {
         return
     }
 
-    //glViewport(0, 0, width, height)
-    //nlistener?.resized(width, height)
+    glViewport(0, 0, width, height)
+    nlistener?.resized(width, height)
 }
 
 fun mouseMove(x: Int, y: Int) {
@@ -231,6 +236,6 @@ fun WndProc(hWnd: HWND?, message: UINT, wParam: WPARAM, lParam: LPARAM): LRESULT
         return DefWindowProcW(hWnd, message, wParam, lParam)
     } catch (e: Throwable) {
         e.printStackTrace()
-        throw e
+        kotlin.system.exitProcess(-1)
     }
 }
