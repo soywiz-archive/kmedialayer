@@ -8,6 +8,7 @@ Supports:
 * JS (**webgl**)
 * JVM (**lwjgl3**)
 * NATIVE
+  * WINDOWS (**WIN32, GDI+, WGL without additional dependencies**)
   * MACOS (**Cocoa without additional dependencies**)
   
 The intended normal workflow is to prototype using the JVM version,
