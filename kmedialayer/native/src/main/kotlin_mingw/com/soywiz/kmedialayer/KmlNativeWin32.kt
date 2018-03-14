@@ -74,6 +74,7 @@ object KmlBaseNativeWin32 : KmlBaseNoEventLoop() {
             memScoped {
                 val msg = alloc<MSG>()
                 //var start = milliStamp()
+                var prev = kotlin.system.getTimeMillis()
                 while (true) {
                     while (PeekMessageW(msg.ptr, null, 0, 0, PM_REMOVE) != 0) {
                         TranslateMessage(msg.ptr)
@@ -85,8 +86,15 @@ object KmlBaseNativeWin32 : KmlBaseNoEventLoop() {
                     //println("SLEEP: sleepTime=$sleepTime, start=$start, now=$now, elapsed=$elapsed")
                     //start = now
                     //Sleep(sleepTime)
+                    val now = kotlin.system.getTimeMillis()
+                    val elapsed = now - prev
+                    //println("$prev, $now, $elapsed")
+                    val sleepTime = kotlin.math.max(0L, (16 - elapsed)).toInt()
+                    prev = now
+
+                    Sleep(sleepTime)
                     tryRender(hwnd)
-                    Sleep(1)
+
                 }
             }
         }
@@ -257,6 +265,12 @@ fun WndProc(hWnd: HWND?, message: UINT, wParam: WPARAM, lParam: LPARAM): LRESULT
                 SetPixelFormat(hDC, letWindowsChooseThisPixelFormat, pfd.ptr)
                 glRenderContext = wglCreateContext(hDC)
                 wglMakeCurrent(hDC, glRenderContext)
+
+                val wglSwapIntervalEXT= wglGetProcAddressAny("wglSwapIntervalEXT").uncheckedCast<CPointer<CFunction<Function1<Int, Int>>>?>()
+
+                println("wglSwapIntervalEXT: $wglSwapIntervalEXT")
+                wglSwapIntervalEXT?.invoke(0)
+
                 println("GL_CONTEXT: $glRenderContext")
                 initialized()
             }
