@@ -83,12 +83,13 @@ object KmlBaseNativeWin32 : KmlBaseNoEventLoop() {
     override fun pollEvents() {
     }
 
-    override suspend fun decodeImage(data: ByteArray): KmlNativeImageData {
-        return decodeImageSync(data)
+    override suspend fun decodeImage(path: String): KmlNativeImageData {
+        return gdipKmlLoadImage(path)
     }
 
-    fun decodeImageSync(data: ByteArray): KmlNativeImageData {
-        TODO()
+    override suspend fun decodeImage(data: ByteArray): KmlNativeImageData {
+        //return decodeImageSync(data)
+        TODO("Not implemented image loading from byte array")
     }
 
     override suspend fun loadFileBytes(path: String, range: LongRange?): ByteArray {
@@ -118,8 +119,9 @@ fun resized(width: Int, height: Int) {
         println("RESIZED_NOT_INITIALIZED")
         return
     }
-    glViewport(0, 0, width, height)
-    nlistener?.resized(width, height)
+
+    //glViewport(0, 0, width, height)
+    //nlistener?.resized(width, height)
 }
 
 fun mouseMove(x: Int, y: Int) {
