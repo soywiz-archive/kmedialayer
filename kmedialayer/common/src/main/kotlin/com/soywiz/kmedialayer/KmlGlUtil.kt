@@ -48,19 +48,19 @@ class KmlGlVertexLayout(val program: KmlGlProgram) {
     private var size: Int = 0
     private val elements = arrayListOf<Element>()
 
-    init {
-        val nattributes = gl.getProgramiv(program.program, gl.ACTIVE_ATTRIBUTES)
-        println("nattributes: $nattributes")
-        for (n in 0 until nattributes) {
-            val namebuf = KmlByteBuffer(1024)
-            val length = KmlIntBuffer(1)
-            val size = KmlIntBuffer(1)
-            val type = KmlIntBuffer(1)
-            gl.getActiveAttrib(program.program, n, namebuf.size, length, size, type, namebuf)
-            val name = namebuf.toAsciiString()
-            println("attribute[$n] = '$name', len=${length[0]}, size=${size[0]}, type=${type[0]}")
-        }
-    }
+    //init {
+    //    val nattributes = gl.getProgramiv(program.program, gl.ACTIVE_ATTRIBUTES)
+    //    println("nattributes: $nattributes")
+    //    for (n in 0 until nattributes) {
+    //        val namebuf = KmlByteBuffer(1024)
+    //        val length = KmlIntBuffer(1)
+    //        val size = KmlIntBuffer(1)
+    //        val type = KmlIntBuffer(1)
+    //        gl.getActiveAttrib(program.program, n, namebuf.size, length, size, type, namebuf)
+    //        val name = namebuf.toAsciiString()
+    //        println("attribute[$n] = '$name', len=${length[0]}, size=${size[0]}, type=${type[0]}")
+    //    }
+    //}
 
     private fun add(name: String, type: Int, esize: Int, count: Int, normalized: Boolean): KmlGlVertexLayout {
         val attribIndex = program.getAttribLocation(name)
