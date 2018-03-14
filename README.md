@@ -7,10 +7,9 @@ Supports:
 * Android (**NOT WORKING YET** *unsupported*)
 * JS (**webgl**)
 * JVM (**lwjgl3**)
-* NATIVE
-  * WINDOWS (**WIN32, GDI+, WGL without additional dependencies**)
-  * MACOS (**Cocoa without additional dependencies**)
-  
+* NATIVE-WINDOWS (**WIN32, GDI+, WGL without additional dependencies**)
+* NATIVE-MACOS (**Cocoa without additional dependencies**)
+
 The intended normal workflow is to prototype using the JVM version,
 and then generate native executables or the JS version for the web.  
 
