@@ -9,7 +9,7 @@ import platform.opengl32.*
 import platform.windows.*
 import platform.posix.*
 
-val String.glstr: CPointer<GLcharVar> get() = this.cstr.uncheckedCast()
+//val String.glstr: CPointer<GLcharVar> get() = this.cstr.uncheckedCast()
 val OPENGL32_DLL_MODULE: HMODULE? by lazy { LoadLibraryA("opengl32.dll") }
 fun wglGetProcAddressAny(name: String): PROC? {
     return wglGetProcAddress(name)

@@ -34,3 +34,14 @@ fun KmlGl.linkProgramAndCheck(program: Int) {
         throw KmlGlException(getProgramInfoLog(program))
     }
 }
+
+fun KmlGl.getErrorString(error: Int = getError()): String {
+    return when (error) {
+        NO_ERROR -> "NO_ERROR"
+        INVALID_ENUM -> "INVALID_ENUM"
+        INVALID_VALUE -> "INVALID_VALUE"
+        INVALID_OPERATION -> "INVALID_OPERATION"
+        OUT_OF_MEMORY -> "OUT_OF_MEMORY"
+        else -> "UNKNOWN_ERROR$error"
+    }
+}

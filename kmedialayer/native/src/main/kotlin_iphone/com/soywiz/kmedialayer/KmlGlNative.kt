@@ -11,7 +11,7 @@ import platform.posix.*
 class KmlGlNative : KmlGl() {
     override fun activeTexture(texture: Int): Unit = glActiveTexture(texture)
     override fun attachShader(program: Int, shader: Int): Unit = glAttachShader(program, shader)
-    override fun bindAttribLocation(program: Int, index: Int, name: String): Unit = glBindAttribLocation(program, index, name)
+    override fun bindAttribLocation(program: Int, index: Int, name: String): Unit = memScoped { glBindAttribLocation(program, index, name) }
     override fun bindBuffer(target: Int, buffer: Int): Unit = glBindBuffer(target, buffer)
     override fun bindFramebuffer(target: Int, framebuffer: Int): Unit = glBindFramebuffer(target, framebuffer)
     override fun bindRenderbuffer(target: Int, renderbuffer: Int): Unit = glBindRenderbuffer(target, renderbuffer)
@@ -66,8 +66,8 @@ class KmlGlNative : KmlGl() {
     override fun getActiveAttrib(program: Int, index: Int, bufSize: Int, length: KmlBuffer, size: KmlBuffer, type: KmlBuffer, name: KmlBuffer): Unit = glGetActiveAttrib(program, index, bufSize, length.unsafeAddress().uncheckedCast(), size.unsafeAddress().uncheckedCast(), type.unsafeAddress().uncheckedCast(), name.unsafeAddress().uncheckedCast())
     override fun getActiveUniform(program: Int, index: Int, bufSize: Int, length: KmlBuffer, size: KmlBuffer, type: KmlBuffer, name: KmlBuffer): Unit = glGetActiveUniform(program, index, bufSize, length.unsafeAddress().uncheckedCast(), size.unsafeAddress().uncheckedCast(), type.unsafeAddress().uncheckedCast(), name.unsafeAddress().uncheckedCast())
     override fun getAttachedShaders(program: Int, maxCount: Int, count: KmlBuffer, shaders: KmlBuffer): Unit = glGetAttachedShaders(program, maxCount, count.unsafeAddress().uncheckedCast(), shaders.unsafeAddress().uncheckedCast())
-    override fun getAttribLocation(program: Int, name: String): Int = glGetAttribLocation(program, name)
-    override fun getUniformLocation(program: Int, name: String): Int = glGetUniformLocation(program, name)
+    override fun getAttribLocation(program: Int, name: String): Int = memScoped { glGetAttribLocation(program, name) }
+    override fun getUniformLocation(program: Int, name: String): Int = memScoped { glGetUniformLocation(program, name) }
     override fun getBooleanv(pname: Int, data: KmlBuffer): Unit = glGetBooleanv(pname, data.unsafeAddress().uncheckedCast())
     override fun getBufferParameteriv(target: Int, pname: Int, params: KmlBuffer): Unit = glGetBufferParameteriv(target, pname, params.unsafeAddress().uncheckedCast())
     override fun getError(): Int = glGetError()
@@ -107,7 +107,7 @@ class KmlGlNative : KmlGl() {
     override fun sampleCoverage(value: Float, invert: Boolean): Unit = glSampleCoverage(value, invert.narrow())
     override fun scissor(x: Int, y: Int, width: Int, height: Int): Unit = glScissor(x, y, width, height)
     override fun shaderBinary(count: Int, shaders: KmlBuffer, binaryformat: Int, binary: KmlBuffer, length: Int): Unit = throw KmlGlException("shaderBinary not implemented in Native")
-    override fun shaderSource(shader: Int, string: String): Unit = run {
+    override fun shaderSource(shader: Int, string: String): Unit = memScoped { run {
                 memScoped {
                     val lengths = allocArray<IntVar>(1)
                     val strings = allocArray<CPointerVar<ByteVar>>(1)
@@ -115,7 +115,7 @@ class KmlGlNative : KmlGl() {
                     strings[0] = string.cstr.placeTo(this)
                     glShaderSource(shader, 1, strings, lengths)
                 }
-                }
+                } }
     override fun stencilFunc(func: Int, ref: Int, mask: Int): Unit = glStencilFunc(func, ref, mask)
     override fun stencilFuncSeparate(face: Int, func: Int, ref: Int, mask: Int): Unit = glStencilFuncSeparate(face, func, ref, mask)
     override fun stencilMask(mask: Int): Unit = glStencilMask(mask)

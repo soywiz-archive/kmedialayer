@@ -27,24 +27,25 @@ object KmlGenGl {
         println("package com.soywiz.kmedialayer")
         println("")
         println("open class KmlGlProxy(val parent: KmlGl) : KmlGl() {")
-        println("    open fun before(name: String): Unit = Unit")
-        println("    open fun after(name: String): Unit = Unit")
+        println("    open fun before(name: String, params: String): Unit = Unit")
+        println("    open fun after(name: String, params: String, result: String): Unit = Unit")
         for (func in OpenglDesc.functions) {
             println("    override fun ${func.unprefixedName}(${func.args.joinToString(", ") { it.name + ": " + it.type.ktname }}): ${func.rettype.ktname} {")
-            println("       before(\"${func.unprefixedName}\")")
+            println("       val sparams = \"${func.args.joinToString(", ") { "\$${it.name}" }}\"")
+            println("       before(\"${func.unprefixedName}\", sparams)")
             println("       val res = parent.${func.unprefixedName}(${func.args.joinToString(", ") { it.name }})")
-            println("       after(\"${func.unprefixedName}\")")
+            println("       after(\"${func.unprefixedName}\", sparams, \"\$res\")")
             println("       return res")
             println("    }")
         }
         println("}")
         println("class LogKmlGlProxy(parent: KmlGl) : KmlGlProxy(parent) {")
-        println("   override fun before(name: String): Unit = run { println(\"before: \$name\") }")
-        println("   override fun after(name: String): Unit = run { println(\"after: \$name\") }")
+        println("   override fun before(name: String, params: String): Unit = run { println(\"before: \$name (\$params)\") }")
+        println("   override fun after(name: String, params: String, result: String): Unit = run { println(\"after: \$name (\$params) = \$result\") }")
         println("}")
         println("class CheckErrorsKmlGlProxy(parent: KmlGl) : KmlGlProxy(parent) {")
         //println("   override fun after(name: String): Unit = run { println(\"BEFORE_GET_ERROR\"); val error = parent.getError(); println(\"AFTER_GET_ERROR\"); if (error != NO_ERROR) { println(\"glError: \$error\"); throw RuntimeException(\"glError: \$error\") } }")
-        println("   override fun after(name: String): Unit = run { val error = parent.getError(); if (error != NO_ERROR) { println(\"glError: \$error calling \$name\"); throw RuntimeException(\"glError: \$error calling \$name\") } }")
+        println("   override fun after(name: String, params: String, result: String): Unit = run { val error = parent.getError(); if (error != NO_ERROR) { println(\"glError: \$error \${getErrorString(error)} calling \$name(\$params) = \$result\"); throw RuntimeException(\"glError: \$error \${getErrorString(error)} calling \$name(\$params) = \$result\") } }")
         println("}")
         println("")
     }
@@ -131,7 +132,13 @@ object KmlGenGl {
             }
             val call = func.nativeBody
                     ?: func.rettype.toNativeReturn("$nativeName(${func.args.joinToString(", ") { it.type.toNative(it.name, target) }})")
-            println("    override fun ${func.unprefixedName}(${func.args.joinToString(", ") { it.name + ": " + it.type.ktname }}): ${func.rettype.ktname} = $call")
+            val hasStrings = func.args.any { it.type == OpenglDesc.GlString }
+            val funcDecl = "override fun ${func.unprefixedName}(${func.args.joinToString(", ") { it.name + ": " + it.type.ktname }}): ${func.rettype.ktname}"
+            if (hasStrings) {
+                println("    $funcDecl = memScoped { $call }")
+            } else {
+                println("    $funcDecl = $call")
+            }
         }
         println("}")
 
@@ -314,7 +321,7 @@ object OpenglDesc {
 
     object GlString : GlType("String") {
         override fun toNativeReturn(param: String): String = "($param)?.toKString() ?: \"\""
-        override fun toNativeWin32(param: String): String = "($param).glstr"
+        override fun toNativeWin32(param: String): String = "($param).cstr.getPointer(this@memScoped)"
     }
 
     object GlNativeImageData : GlType("KmlNativeImageData") {

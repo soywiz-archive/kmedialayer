@@ -11,8 +11,8 @@ import platform.posix.*
 //}
 actual val Kml: KmlBase = KmlBaseNativeWin32
 
-//private val glNative: KmlGl by lazy { KmlGlNative() }
-private val glNative: KmlGl by lazy { LogKmlGlProxy(CheckErrorsKmlGlProxy(KmlGlNative())) }
+private val glNative: KmlGl by lazy { KmlGlNative() }
+//private val glNative: KmlGl by lazy { LogKmlGlProxy(CheckErrorsKmlGlProxy(KmlGlNative())) }
 
 lateinit var nwindowConfig: WindowConfig
 var nlistener: KMLWindowListener? = null
