@@ -21,6 +21,7 @@ class TweenComponent(
     var elapsed = 0.0
     override fun update(ms: Double) {
         elapsed += ms
+        //println("elapsed: $elapsed, $totalMs : $ms")
         val ratio = clamp(elapsed / totalMs, 0.0, 1.0)
         updateRatio(ratio)
     }

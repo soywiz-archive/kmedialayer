@@ -9,6 +9,7 @@ open class Scene {
 
     lateinit var gl: KmlGl
     lateinit var application: SceneApplication
+    val kml get() = application.kml
 
     open suspend fun init() {
     }
@@ -100,6 +101,8 @@ open class Scene {
     }
 }
 
+suspend fun Scene.delay(ms: Int): Unit = kml.delay(ms)
+
 class SceneRenderContext(
     val batcher: SceneBatcher
 ) {
@@ -111,8 +114,8 @@ class SceneRenderContext(
 open class SceneContainer(val rootScene: Scene) : ViewContainer() {
 }
 
-suspend fun Scene.texture(name: String) = SceneTexture(gl.createKmlTexture().upload(Kml.decodeImage(name)))
-suspend fun Scene.texture(data: ByteArray) = SceneTexture(gl.createKmlTexture().upload(Kml.decodeImage(data)))
+suspend fun Scene.texture(name: String) = SceneTexture(gl.createKmlTexture().upload(kml.decodeImage(name)))
+suspend fun Scene.texture(data: ByteArray) = SceneTexture(gl.createKmlTexture().upload(kml.decodeImage(data)))
 suspend fun Scene.texture(bitmap: Bitmap32) =
     SceneTexture(gl.createKmlTexture().upload(bitmap.width, bitmap.height, bitmap.data))
 

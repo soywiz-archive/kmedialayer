@@ -1,24 +1,50 @@
 package com.soywiz.kmedialayer.scene
 
 import com.soywiz.kmedialayer.*
-import kotlin.math.*
 
-class SceneApplication(v: Boolean, val windowConfig: WindowConfig = WindowConfig(), val sceneGen: () -> Scene) :
-    KMLWindowListener() {
+interface SceneApplication {
+    val kml: KmlBase
+    val mouse: Mouse
+
+    class Mouse {
+        var x: Int = -1000; internal set
+        var y: Int = -1000; internal set
+        val buttons = (0 until 4).map { Button(it) }
+
+        class Button(val id: Int) {
+            var downX: Int = 0
+            var downY: Int = 0
+            var downTime: Double = 0.0; internal set
+
+            var upX: Int = 0
+            var upY: Int = 0
+            var upTime: Double = 0.0; internal set
+
+            var pressed: Boolean = false; internal set
+        }
+
+        fun button(index: Int) = buttons.getOrNull(index)
+        fun pressing(button: Int) = button(button)?.pressed ?: false
+    }
+}
+
+class DefaultSceneApplication(v: Boolean, val windowConfig: WindowConfig = WindowConfig(), val sceneGen: () -> Scene) :
+    KMLWindowListener(), SceneApplication {
     lateinit var scene: Scene
     lateinit var renderContext: SceneRenderContext
+    override val kml: KmlBase = Kml
 
     override suspend fun init(gl: KmlGl) = gl.run {
         renderContext = SceneRenderContext(SceneBatcher(gl, windowConfig.width, windowConfig.height))
-        scene = sceneGen().apply { this.gl = gl; this.application = this@SceneApplication; init() }
+        scene = sceneGen().apply { this.gl = gl; this.application = this@DefaultSceneApplication; init() }
         scene.apply { updateScene(0) }
         Unit
     }
 
     private var lastTime = 0.0
     override fun render(gl: KmlGl) {
-        if (lastTime == 0.0) lastTime = Kml.currentTimeMillis()
-        val now = Kml.currentTimeMillis()
+        if (lastTime == 0.0) lastTime = kml.currentTimeMillis()
+        val now = kml.currentTimeMillis()
         if (now != lastTime) {
             scene.apply {
                 updateScene((now - lastTime).toInt())
@@ -46,28 +72,7 @@ class SceneApplication(v: Boolean, val windowConfig: WindowConfig = WindowConfig
         super.gamepadUpdate(button, pressed, ratio)
     }
 
-    class Mouse {
-        var x: Int = -1000; internal set
-        var y: Int = -1000; internal set
-        val buttons = (0 until 4).map { Button(it) }
-
-        class Button(val id: Int) {
-            var downX: Int = 0
-            var downY: Int = 0
-            var downTime: Double = 0.0; internal set
-
-            var upX: Int = 0
-            var upY: Int = 0
-            var upTime: Double = 0.0; internal set
-
-            var pressed: Boolean = false; internal set
-        }
-
-        fun button(index: Int) = buttons.getOrNull(index)
-        fun pressing(button: Int) = button(button)?.pressed ?: false
-    }
-
-    val mouse = Mouse()
+    override val mouse = SceneApplication.Mouse()
 
 
     override fun mouseUpdateMove(x: Int, y: Int) {
@@ -81,7 +86,7 @@ class SceneApplication(v: Boolean, val windowConfig: WindowConfig = WindowConfig
     override fun mouseUpdateButton(button: Int, pressed: Boolean) {
         scene.apply {
             mouse.button(button)?.let { button ->
-                val now = Kml.currentTimeMillis()
+                val now = kml.currentTimeMillis()
                 val changed = button.pressed != pressed
                 button.pressed = pressed
                 if (pressed) {
@@ -122,6 +127,6 @@ class SceneApplication(v: Boolean, val windowConfig: WindowConfig = WindowConfig
 
 fun SceneApplication(windowConfig: WindowConfig = WindowConfig(), sceneGen: () -> Scene) {
     SceneScope.apply {
-        Kml.application(windowConfig, SceneApplication(true, windowConfig, sceneGen))
+        Kml.application(windowConfig, DefaultSceneApplication(true, windowConfig, sceneGen))
     }
 }

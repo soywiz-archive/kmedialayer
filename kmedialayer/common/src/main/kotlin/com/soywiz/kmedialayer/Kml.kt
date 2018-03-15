@@ -1,12 +1,13 @@
 package com.soywiz.kmedialayer
 
-import com.soywiz.kmedialayer.scene.util.*
+import com.soywiz.kmedialayer.scene.util.Pool
+import com.soywiz.kmedialayer.scene.util.Signal
 import kotlin.coroutines.experimental.*
 
 data class WindowConfig(
-    val width: Int = 640,
-    val height: Int = 480,
-    val title: String = "KMediaLayer"
+        val width: Int = 640,
+        val height: Int = 480,
+        val title: String = "KMediaLayer"
 )
 
 open class CancelException(val complete: Boolean = false) : RuntimeException()
@@ -28,7 +29,8 @@ class CancellationToken(val cancel: Signal<Throwable> = Signal()) : AbstractCoro
 
 public suspend inline fun <T> suspendCoroutineCancellable(crossinline block: (Continuation<T>, cancel: Signal<Throwable>) -> Unit): T {
     return suspendCoroutine<T> { c ->
-        block(c, c.context[CancellationToken.KEY]!!.cancel)
+        val cancelToken = c.context[CancellationToken.KEY] ?: throw IllegalStateException("No CancellationToken in the suspendContext")
+        block(c, cancelToken.cancel)
     }
 }
 
@@ -136,8 +138,6 @@ class Deferred<T>(bcontext: CoroutineContext, val cancellationToken: Cancellatio
     }
 }
 
-suspend fun delay(ms: Int): Unit = Kml.delay(ms)
-
 fun <T> launchAndForget(context: CoroutineContext = EmptyCoroutineContext, callback: suspend () -> T): Unit {
     launch(context) { callback() }
 }
@@ -156,6 +156,10 @@ abstract class KmlBase {
         val cont = Deferred<T>(context, CancellationToken())
         callback.startCoroutine(cont)
         return cont
+    }
+
+    open fun <T : Any> runBlocking(context: CoroutineContext = EmptyCoroutineContext, callback: suspend () -> T): T {
+        TODO("runBlocking not implemented in this platform: $this")
     }
 
     open fun application(windowConfig: WindowConfig, listener: KMLWindowListener) {
@@ -258,7 +262,7 @@ abstract class KmlBaseNoEventLoop : KmlBase() {
         timers.add(task)
     }
 
-    fun <T : Any> runBlocking(context: CoroutineContext = EmptyCoroutineContext, callback: suspend () -> T): T {
+    override fun <T : Any> runBlocking(context: CoroutineContext, callback: suspend () -> T): T {
         var done = false
         lateinit var resultValue: T
         var resultException: Throwable? = null
