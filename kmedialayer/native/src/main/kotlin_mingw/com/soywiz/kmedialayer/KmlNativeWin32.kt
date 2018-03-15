@@ -109,13 +109,13 @@ object KmlBaseNativeWin32 : KmlBaseNoEventLoop() {
     override fun pollEvents() {
     }
 
-    override suspend fun decodeImage(path: String): KmlNativeImageData {
-        return gdipKmlLoadImage(path)
-    }
+    //override suspend fun decodeImage(path: String): KmlNativeImageData {
+    //    return gdipKmlLoadImage(path)
+    //}
 
     override suspend fun decodeImage(data: ByteArray): KmlNativeImageData {
         //return decodeImageSync(data)
-        TODO("Not implemented image loading from byte array")
+        return gdipKmlLoadImageFromByteArray(data)
     }
 
     override suspend fun loadFileBytes(path: String, range: LongRange?): ByteArray {
