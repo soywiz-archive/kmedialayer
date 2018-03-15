@@ -1,5 +1,5 @@
 buildscript {
-	ext.projectVersion = '0.0.3'
+	ext.projectVersion = '0.0.4'
 	ext.projectName = 'kmedialayer'
 	ext.projectGroup = 'com.soywiz'
 	ext.projectDesc = 'kmedialayer: Portable layer for multimedia applications'
