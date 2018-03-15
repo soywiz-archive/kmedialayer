@@ -17,12 +17,10 @@ public inline fun <T, R> Iterable<T>.firstNotNullOrNull(predicate: (T) -> R?): R
     return null
 }
 
-fun <T : Scene> testSceneApplication(scene: T, windowConfig: WindowConfig = WindowConfig(), testBlock: suspend T.() -> Unit) {
+class TestSceneApplication(val scene: Scene) : SceneApplication {
     var time = 0L
-    scene.gl = KmlGlDummy
-    val kml = object : KmlBase() {
-        lateinit var app: SceneApplication
 
+    inner class KmlTest : KmlBase() {
         override suspend fun loadFileBytes(path: String, range: LongRange?): ByteArray {
             val base = File(".").absolutePath.replaceAfter(".idea", "").replace(".idea", "")
             val all = File(File(base), path).readBytes()
@@ -38,21 +36,6 @@ fun <T : Scene> testSceneApplication(scene: T, windowConfig: WindowConfig = Wind
         override suspend fun delay(ms: Int) {
             // Do not delay
             step(ms)
-        }
-
-        fun step(ms: Int) {
-            val chunk = 16
-            var elapsed = 0
-            app.apply {
-                scene.apply {
-                    while (elapsed <= ms) {
-                        time += chunk
-                        //println("step: $chunk")
-                        updateScene(chunk)
-                        elapsed += chunk
-                    }
-                }
-            }
         }
 
         override fun currentTimeMillis(): Double = time.toDouble()
@@ -72,16 +55,33 @@ fun <T : Scene> testSceneApplication(scene: T, windowConfig: WindowConfig = Wind
             throw IllegalArgumentException("Unknown image type with magic $magic")
         }
     }
-    scene.application = object : SceneApplication {
-        override val kml: KmlBase = kml
-        override val mouse = SceneApplication.Mouse()
+
+    fun step(ms: Int) {
+        val chunk = 16
+        var elapsed = 0
+        scene.apply {
+            while (elapsed <= ms) {
+                time += chunk
+                //println("step: $chunk")
+                updateScene(chunk)
+                elapsed += chunk
+            }
+        }
     }
-    kml.app = scene.application
+
+    override val kml: KmlBase = KmlTest()
+    override val mouse = SceneApplication.Mouse()
+}
+
+fun <T : Scene> testSceneApplication(scene: T, windowConfig: WindowConfig = WindowConfig(), testBlock: suspend T.(TestSceneApplication) -> Unit) {
+    val application = TestSceneApplication(scene)
+    scene.gl = KmlGlDummy
+    scene.application = application
     runBlocking(CancellationToken(), {
-        kml.step(16)
+        application.step(16)
     }) {
         scene.init()
-        scene.testBlock()
+        scene.testBlock(application)
     }
 }
 
