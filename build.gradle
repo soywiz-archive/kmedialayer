@@ -11,7 +11,7 @@ buildscript {
 	ext.projectInceptionYear = 2017
 
 	ext.kotlinVersion = '1.2.30'
-    ext.kotlinNativeVersion = '0.7-dev-1299'
+    ext.kotlinNativeVersion = '0.7-dev-1309'
 
 	repositories {
 		jcenter()
