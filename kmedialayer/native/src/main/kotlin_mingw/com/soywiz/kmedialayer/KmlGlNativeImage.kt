@@ -22,7 +22,7 @@ fun initGdiPlusOnce() {
     }
 }
 
-
+/*
 @Suppress("unused")
 class MyMemoryStream(rawPtr: kotlinx.cinterop.NativePtr) : CStructVar(rawPtr) {
     var pad0: Long = 0L
@@ -173,6 +173,58 @@ fun gdipKmlLoadImageFromByteArray(data: ByteArray): KmlNativeNativeImageData {
 
             KmlNativeNativeImageData(iwidth, iheight, out)
         }
+    }
+}
+*/
+
+
+fun gdipKmlLoadImageFromByteArray(data: ByteArray): KmlNativeNativeImageData {
+    return memScoped {
+        val width = alloc<FloatVar>()
+        val height = alloc<FloatVar>()
+        val pimage = allocArray<COpaquePointerVar>(1)
+
+        initGdiPlusOnce()
+        data.usePinned { datap ->
+            val pdata = datap.addressOf(0)
+            val pstream = SHCreateMemStream(pdata, data.size)!!
+            try {
+                if (GdipCreateBitmapFromStream(pstream, pimage) != 0) {
+                    throw RuntimeException("Can't load image from byte array")
+                }
+            } finally {
+                pstream.pointed.lpVtbl?.pointed?.Release?.invoke(pstream)
+            }
+        }
+
+        GdipGetImageDimension(pimage[0], width.ptr, height.ptr)
+
+        val rect = alloc<GpRect>().apply {
+            X = 0
+            Y = 0
+            Width = width.value.toInt()
+            Height = height.value.toInt()
+        }
+        val bmpData = alloc<BitmapData>()
+        if (GdipBitmapLockBits(pimage[0], rect.ptr, ImageLockModeRead, PixelFormat32bppARGB, bmpData.ptr) != 0) {
+            throw RuntimeException("Can't lock image")
+        }
+
+        val out = KmlIntBuffer(bmpData.Width * bmpData.Height)
+        var n = 0
+        for (y in 0 until bmpData.Height) {
+            val p = (bmpData.Scan0.toLong() + (bmpData.Stride * y)).toCPointer<IntVar>()
+            for (x in 0 until bmpData.Width) {
+                out[n] = p!![x]
+                n++
+            }
+        }
+
+        GdipBitmapUnlockBits(pimage[0], bmpData.ptr)
+        GdipDisposeImage(pimage[0])
+
+        //println(out.toList())
+        KmlNativeNativeImageData(width.value.toInt(), height.value.toInt(), out)
     }
 }
 
