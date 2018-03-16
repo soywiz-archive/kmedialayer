@@ -25,8 +25,8 @@ class KmlByteBuffer(override val baseBuffer: KmlBufferBase) : KmlBuffer, Iterabl
     }
     val size: Int = baseBuffer.size / ELEMENT_SIZE
     constructor(size: Int) : this(KmlBufferBase(size * ELEMENT_SIZE))
-    operator fun get(index: Int): Byte = baseBuffer.getByte(index)
-    operator fun set(index: Int, value: Byte): Unit = run { baseBuffer.setByte(index, value) }
+    inline operator fun get(index: Int): Byte = baseBuffer.getByte(index)
+    inline operator fun set(index: Int, value: Byte): Unit = run { baseBuffer.setByte(index, value) }
     override fun iterator(): Iterator<Byte> = object : Iterator<Byte> {
         var pos = 0
         override fun hasNext(): Boolean = pos < size
@@ -45,8 +45,8 @@ class KmlShortBuffer(override val baseBuffer: KmlBufferBase) : KmlBuffer, Iterab
     }
     val size: Int = baseBuffer.size / ELEMENT_SIZE
     constructor(size: Int) : this(KmlBufferBase(size * ELEMENT_SIZE))
-    operator fun get(index: Int): Short = baseBuffer.getShort(index)
-    operator fun set(index: Int, value: Short): Unit = run { baseBuffer.setShort(index, value) }
+    inline operator fun get(index: Int): Short = baseBuffer.getShort(index)
+    inline operator fun set(index: Int, value: Short): Unit = run { baseBuffer.setShort(index, value) }
     override fun iterator(): Iterator<Short> = object : Iterator<Short> {
         var pos = 0
         override fun hasNext(): Boolean = pos < size
@@ -65,8 +65,8 @@ class KmlIntBuffer(override val baseBuffer: KmlBufferBase) : KmlBuffer, Iterable
     }
     val size: Int = baseBuffer.size / ELEMENT_SIZE
     constructor(size: Int) : this(KmlBufferBase(size * ELEMENT_SIZE))
-    operator fun get(index: Int): Int = baseBuffer.getInt(index)
-    operator fun set(index: Int, value: Int): Unit = run { baseBuffer.setInt(index, value) }
+    inline operator fun get(index: Int): Int = baseBuffer.getInt(index)
+    inline operator fun set(index: Int, value: Int): Unit = run { baseBuffer.setInt(index, value) }
     override fun iterator(): Iterator<Int> = object : Iterator<Int> {
         var pos = 0
         override fun hasNext(): Boolean = pos < size
@@ -85,8 +85,8 @@ class KmlFloatBuffer(override val baseBuffer: KmlBufferBase) : KmlBuffer, Iterab
     }
     val size: Int = baseBuffer.size / ELEMENT_SIZE
     constructor(size: Int) : this(KmlBufferBase(size * ELEMENT_SIZE))
-    operator fun get(index: Int): Float = baseBuffer.getFloat(index)
-    operator fun set(index: Int, value: Float): Unit = run { baseBuffer.setFloat(index, value) }
+    inline operator fun get(index: Int): Float = baseBuffer.getFloat(index)
+    inline operator fun set(index: Int, value: Float): Unit = run { baseBuffer.setFloat(index, value) }
     override fun iterator(): Iterator<Float> = object : Iterator<Float> {
         var pos = 0
         override fun hasNext(): Boolean = pos < size

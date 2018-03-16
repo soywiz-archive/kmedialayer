@@ -48,8 +48,8 @@ object KmlGenBuffer {
             println("    }")
             println("    val size: Int = baseBuffer.size / ELEMENT_SIZE")
             println("    constructor(size: Int) : this(KmlBufferBase(size * ELEMENT_SIZE))")
-            println("    operator fun get(index: Int): $name = baseBuffer.get$name(index)")
-            println("    operator fun set(index: Int, value: $name): Unit = run { baseBuffer.set$name(index, value) }")
+            println("    inline operator fun get(index: Int): $name = baseBuffer.get$name(index)")
+            println("    inline operator fun set(index: Int, value: $name): Unit = run { baseBuffer.set$name(index, value) }")
             println("    override fun iterator(): Iterator<$name> = object : Iterator<$name> {")
             println("        var pos = 0")
             println("        override fun hasNext(): Boolean = pos < size")
@@ -125,22 +125,32 @@ object KmlGenBuffer {
     fun Printer.generateNative() {
         println("package com.soywiz.kmedialayer")
         println("")
+        println("import konan.*")
         println("import kotlinx.cinterop.*")
         println("")
         println("private fun roundUp(n: Int, m: Int) = if (n >= 0) ((n + m - 1) / m) * m else (n / m) * m")
         println("")
         println("actual class KmlBufferBase private constructor(val data: ByteArray) : KmlBuffer {")
-        for (type in types) {
-            println("    val data${type.name}: ${type.name}Array = data.uncheckedCast()")
-        }
+        //for (type in types) {
+        //    println("    val data${type.name}: ${type.name}Array = data.uncheckedCast()")
+        //}
         println("    actual override val baseBuffer: KmlBufferBase = this")
         println("    actual val size: Int = data.size")
         println("    actual constructor(size: Int) : this(ByteArray(roundUp(size, 8)))")
         println("")
         for (type in types) {
             val tname = type.name
-            println("    actual inline fun get$tname(index: Int): $tname = data$tname[index]")
-            println("    actual inline fun set$tname(index: Int, value: $tname): Unit { data$tname[index] = value }")
+            val tsize = type.size
+            when (type) {
+                KmlByte -> {
+                    println("    actual inline fun get$tname(index: Int): $tname = data[index]")
+                    println("    actual inline fun set$tname(index: Int, value: $tname): Unit { data[index] = value }")
+                }
+                else -> {
+                    println("    actual inline fun get$tname(index: Int): $tname = data.${tname.toLowerCase()}At(index * $tsize)")
+                    println("    actual inline fun set$tname(index: Int, value: $tname): Unit { data.set${tname}At(index * $tsize, value) }")
+                }
+            }
         }
         println("}")
         println("")
