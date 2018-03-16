@@ -73,3 +73,21 @@ interface KmlGl {
 The Scene API offers an API similar to the Swift's SpriteKit, Flash or Unity. There is a tree of view nodes,
 each node has properties and allow to attach components. There are components for handling mouse and key events
 
+### JobQueue
+
+JobQueue exposes an API to enqueue asynchronous processes.
+
+```kotlin
+val queue = JobQueue()
+queue { view.moveBy(16.0, 16.0, time = 0.5) } 
+```
+
+Depending on the task in hand you can enqueue more tasks, or discard some of the elements in the queue.
+
+```
+queue.discard() // Discard all the tasks in the queue that has not started
+queue.cancel()  // Discards all the tasks and cancels the current task 
+queue.cancel(complete = true) // Discards all the tasks and cancels the current task, signaling with a complete = true
+```
+
+Signaling cancelations with `complete = true` makes some task like tweening to jump to the target state.
