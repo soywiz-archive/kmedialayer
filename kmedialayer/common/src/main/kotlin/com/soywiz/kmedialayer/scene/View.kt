@@ -1,5 +1,6 @@
 package com.soywiz.kmedialayer.scene
 
+import com.soywiz.kmedialayer.scene.font.*
 import com.soywiz.kmedialayer.scene.geom.*
 
 open class View {
@@ -104,6 +105,10 @@ open class View {
     var alpha = 1.0; set(value) = run { invalidate(); field = value }
     var speed = 1.0
 
+    var scale get() = (scaleX + scaleY) / 2.0; set(value) = run { scaleX = value; scaleY = value }
+
+    inline fun position(x: Number, y: Number) = run { this.x = x.toDouble(); this.y = y.toDouble() }
+
     fun invalidate() {
         invalidateParent()
         invalidateChildren()
@@ -157,6 +162,10 @@ open class ViewContainer : View() {
         }
     }
 
+    fun removeChildren() {
+        while (children.isNotEmpty()) removeChild(children.last())
+    }
+
     fun addChild(view: View) {
         if (view == this) throw RuntimeException("Can't add view to itself!")
         view.removeFromParent()
@@ -199,18 +208,16 @@ open class ViewContainer : View() {
     }
 }
 
+
 open class Image(var tex: SceneTexture) : View() {
-    var p0 = Point()
-    var p1 = Point()
-    var p2 = Point()
-    var p3 = Point()
     var computedAlpha = 1.0
 
-    val width get() = tex.widthPixels.toDouble()
-    val height get() = tex.heightPixels.toDouble()
+    private val quad = Quad()
+    val width get() = tex.width.toDouble()
+    val height get() = tex.height.toDouble()
+
     var anchorX: Double = 0.0
     var anchorY: Double = 0.0
-
     fun anchor(ax: Double, ay: Double = ax) = run { anchorX = ax; anchorY = ay }
 
     override fun recompute() {
@@ -219,10 +226,7 @@ open class Image(var tex: SceneTexture) : View() {
         val gm = _globalMatrix
         val sx = -width * anchorX
         val sy = -height * anchorY
-        p0.setToTransform(gm, sx, sy)
-        p1.setToTransform(gm, sx + width, sy)
-        p2.setToTransform(gm, sx, sy + height)
-        p3.setToTransform(gm, sx + width, sy + height)
+        quad.set(gm, sx, sy, width, height)
         computedAlpha = concatAlpha
     }
 
@@ -236,19 +240,67 @@ open class Image(var tex: SceneTexture) : View() {
 
     override fun render(rc: SceneRenderContext) {
         recompute()
-        rc.batcher.addQuad(
-            p0.x.toFloat(),
-            p0.y.toFloat(),
-            p1.x.toFloat(),
-            p1.y.toFloat(),
-            p2.x.toFloat(),
-            p2.y.toFloat(),
-            p3.x.toFloat(),
-            p3.y.toFloat(),
-            tex,
-            computedAlpha.toFloat()
-        )
+        rc.batcher.addQuad(quad, tex, computedAlpha.toFloat())
     }
 
     override fun clone(): Image = Image(tex).apply { copyPropertiesFrom(this@Image) }
+}
+
+open class Text(initialFont: BitmapFont, initialText: String, initialSize: Int = 32) : View() {
+    var font: BitmapFont = initialFont
+        set(value) {
+            field = value
+            invalidate()
+        }
+    var text: String = initialText
+        set(value) {
+            field = value
+            invalidate()
+        }
+
+    var size: Int = initialSize
+        set(value) {
+            field = value
+            invalidate()
+        }
+
+    private val quads = arrayListOf<QuadWithTexture>()
+    private val localBounds = Rectangle()
+    private var computedAlpha = 1.0
+    private val _tm = Matrix2d()
+
+    var anchorX: Double = 0.0
+    var anchorY: Double = 0.0
+    fun anchor(ax: Double, ay: Double = ax) = run { anchorX = ax; anchorY = ay }
+
+    override fun recompute() {
+        if (validParents && validChildren) return
+        super.recompute()
+        _tm.copyFrom(_globalMatrix)
+        val scale = size.toDouble() / font.lineHeight.toDouble()
+        _tm.prescale(scale, scale)
+        quads.clear()
+        font.renderQuads(_tm, text, 0.0, 0.0, localBounds, null)
+        val sx2 = -localBounds.width * anchorX
+        val sy2 = -localBounds.height * anchorY
+        font.renderQuads(_tm, text, sx2, sy2, localBounds, quads)
+        localBounds.width *= scale
+        localBounds.height *= scale
+        //println("FONT: size=$size, lineHeight=${font.lineHeight}, scale=$scale")
+        computedAlpha = concatAlpha
+        //println(localBounds)
+    }
+
+    override fun viewInGlobal(x: Double, y: Double): View? {
+        val localX = globalToLocalX(x, y)
+        val localY = globalToLocalY(x, y)
+        return if (localX >= localBounds.left && localX <= localBounds.right && localY >= localBounds.top && localY <= localBounds.bottom) this else null
+    }
+
+    override fun render(rc: SceneRenderContext) {
+        recompute()
+        for (quad in quads) {
+            rc.batcher.addQuad(quad.quad, quad.tex, computedAlpha.toFloat())
+        }
+    }
 }

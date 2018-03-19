@@ -18,6 +18,9 @@ open class Scene {
         root.render(rc)
     }
 
+    suspend fun changeSceneTo(scene: Scene) {
+        application.changeScene(scene)
+    }
 
     open fun onKeyDown(key: Key) {
     }
@@ -82,6 +85,18 @@ open class Scene {
         onMouseUp(button)
     }
 
+    fun SceneApplication._gameConnectionUpdate(player: Int, name: String, connected: Boolean) {
+        forEachComponent<GamepadComponent> { c -> c.onGamepadConnectionUpdate(player, name, connected) }
+    }
+
+    fun SceneApplication._gameButtonUpdate(player: Int, button: GameButton, ratio: Double) {
+        forEachComponent<GamepadComponent> { c -> c.onGamepadButtonUpdate(player, button, ratio) }
+    }
+
+    fun SceneApplication._gameStickUpdate(player: Int, stick: GameStick, x: Double, y: Double) {
+        forEachComponent<GamepadComponent> { c -> c.onGamepadStickUpdate(player, stick, x, y) }
+    }
+
     private inline fun <reified T : Component> forEachComponent(callback: (T) -> Unit) {
         for (c in getComponents(root, tempComponents)) {
             if (c is T) callback(c)
@@ -116,10 +131,14 @@ open class SceneContainer(val rootScene: Scene) : ViewContainer() {
 
 suspend fun Scene.texture(name: String) = SceneTexture(gl.createKmlTexture().upload(kml.decodeImage(name)))
 suspend fun Scene.texture(data: ByteArray) = SceneTexture(gl.createKmlTexture().upload(kml.decodeImage(data)))
-suspend fun Scene.texture(bitmap: Bitmap32) =
-    SceneTexture(gl.createKmlTexture().upload(bitmap.width, bitmap.height, bitmap.data))
+suspend fun Scene.texture(bitmap: Bitmap32): SceneTexture {
+    return SceneTexture(gl.createKmlTexture().upload(bitmap.width, bitmap.height, bitmap.data))
+}
+suspend fun Scene.texture(bitmap: KmlNativeImageData): SceneTexture {
+    return SceneTexture(gl.createKmlTexture().upload(bitmap))
+}
 
-data class Bitmap32(val width: Int, val height: Int, val data: KmlIntBuffer = KmlIntBuffer(width * height)) {
+data class Bitmap32(val width: Int, val height: Int, val data: IntArray = IntArray(width * height)) {
     fun index(x: Int, y: Int) = y * width + x
     operator fun get(x: Int, y: Int) = data[index(x, y)]
     operator fun set(x: Int, y: Int, value: Int) = run { data[index(x, y)] = value }

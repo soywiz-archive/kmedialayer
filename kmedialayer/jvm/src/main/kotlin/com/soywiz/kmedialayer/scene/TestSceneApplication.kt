@@ -22,15 +22,7 @@ class TestSceneApplication(val scene: Scene) : SceneApplication {
 
     inner class KmlTest : KmlBase() {
         override suspend fun loadFileBytes(path: String, range: LongRange?): ByteArray {
-            val base = File(".").absolutePath.replaceAfter(".idea", "").replace(".idea", "")
-            val all = File(File(base), path).readBytes()
-            //val clazz = SceneApplication::class.java
-            //val loaders = Thread.currentThread().stackTrace.map { Class.forName(it.className).classLoader }.filterNotNull()
-            //val i = loaders.firstNotNullOrNull { it.getResourceAsStream(path) } ?: throw RuntimeException("Can't load file '$path'")
-            //val all = i.readBytes()
-            //val i = loaders.firstNotNullOrNull { it.getResourceAsStream(path) } ?: throw RuntimeException("Can't load file '$path'")
-            //val all = i.readBytes()
-            return if (range == null) all else all.copyOfRange(range.start.toInt(), (range.endInclusive + 1).toInt())
+            return Kml.loadFileBytes(path, range)
         }
 
         override suspend fun delay(ms: Int) {
@@ -54,6 +46,10 @@ class TestSceneApplication(val scene: Scene) : SceneApplication {
             }
             throw IllegalArgumentException("Unknown image type with magic $magic")
         }
+    }
+
+    override suspend fun changeScene(scene: Scene) {
+        TODO()
     }
 
     fun step(ms: Int) {

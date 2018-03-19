@@ -1,13 +1,13 @@
 package com.soywiz.kmedialayer
 
-import com.soywiz.kmedialayer.scene.util.Pool
-import com.soywiz.kmedialayer.scene.util.Signal
+import com.soywiz.kmedialayer.scene.util.*
 import kotlin.coroutines.experimental.*
 
 data class WindowConfig(
-        val width: Int = 640,
-        val height: Int = 480,
-        val title: String = "KMediaLayer"
+    val width: Int = 640,
+    val height: Int = 480,
+    val title: String = "KMediaLayer",
+    val bgcolor: List<Float> = listOf(0.2f, 0.4f, 0.6f, 1f)
 )
 
 open class CancelException(val complete: Boolean = false) : RuntimeException()
@@ -29,15 +29,20 @@ class CancellationToken(val cancel: Signal<Throwable> = Signal()) : AbstractCoro
 
 public suspend inline fun <T> suspendCoroutineCancellable(crossinline block: (Continuation<T>, cancel: Signal<Throwable>) -> Unit): T {
     return suspendCoroutine<T> { c ->
-        val cancelToken = c.context[CancellationToken.KEY] ?: throw IllegalStateException("No CancellationToken in the suspendContext")
-        block(c, cancelToken.cancel)
+        val cancelToken = c.context[CancellationToken.KEY]
+        if (cancelToken == null) {
+            println("WARNING: No CancellationToken in the suspendContext")
+            //throw IllegalStateException("No CancellationToken in the suspendContext")
+        }
+        block(c, cancelToken?.cancel ?: Signal())
     }
 }
 
 class JobQueue(val context: CoroutineContext = EmptyCoroutineContext) {
     private val tasks = arrayListOf<suspend () -> Unit>()
-    private var running = false
+    var running = false; private set
     private var currentJob: Job<Unit>? = null
+    val size: Int get() = tasks.size + (if (running) 1 else 0)
 
     private suspend fun run() {
         running = true
@@ -50,6 +55,8 @@ class JobQueue(val context: CoroutineContext = EmptyCoroutineContext) {
                 job.await()
                 currentJob = null
             }
+        } catch (e: Throwable) {
+            println(e)
         } finally {
             currentJob = null
             running = false
@@ -190,6 +197,8 @@ abstract class KmlBase {
     }
 }
 
+suspend fun KmlBase.loadFileString(path: String, charset: Charset = UTF8) = loadFileBytes(path).toString(charset)
+
 expect val Kml: KmlBase
 
 open class KMLWindowListener {
@@ -204,7 +213,13 @@ open class KMLWindowListener {
     open fun keyUpdate(key: Key, pressed: Boolean) {
     }
 
-    open fun gamepadUpdate(button: Int, pressed: Boolean, ratio: Double) {
+    open fun gamepadConnection(player: Int, name: String, connected: Boolean) {
+    }
+
+    open fun gamepadButtonUpdate(player: Int, button: GameButton, ratio: Double) {
+    }
+
+    open fun gamepadStickUpdate(player: Int, stick: GameStick, x: Double, y: Double) {
     }
 
     open fun mouseUpdateMove(x: Int, y: Int) {
@@ -214,6 +229,28 @@ open class KMLWindowListener {
     }
 
     open fun resized(width: Int, height: Int) {
+    }
+}
+
+enum class GameStick(val id: Int) {
+    LEFT(0), RIGHT(1);
+
+    companion object {
+        val STICKS = values()
+    }
+}
+
+enum class GameButton(val id: Int) {
+    UP(0), LEFT(1), RIGHT(2), DOWN(3),
+    BUTTON1(4), BUTTON2(5), BUTTON3(6), BUTTON4(7), BUTTON5(8), BUTTON6(9),
+    SELECT(10), START(11),
+    LEFT_THUMB(12), RIGHT_THUMB(13),
+    LEFT_TRIGGER1(14), LEFT_TRIGGER2(15),
+    RIGHT_TRIGGER1(16), RIGHT_TRIGGER2(17);
+
+    companion object {
+        val BUTTONS = values()
+        val MAX = BUTTONS.size
     }
 }
 
@@ -266,6 +303,7 @@ abstract class KmlBaseNoEventLoop : KmlBase() {
         var done = false
         lateinit var resultValue: T
         var resultException: Throwable? = null
+        //println("runBlocking[a]")
         callback.startCoroutine(object : Continuation<T> {
             override val context: CoroutineContext = context
             override fun resume(value: T) {
@@ -279,11 +317,16 @@ abstract class KmlBaseNoEventLoop : KmlBase() {
                 done = true
             }
         })
+        //println("runBlocking[b]")
         while (!done) {
+            //println("runBlocking[c]")
             sleep(1)
             //Timers.check()
+            //println("runBlocking[d]")
             pollEvents()
+            //println("runBlocking[e]")
             timers.check()
+            //println("runBlocking[f]")
         }
         if (resultException != null) throw resultException!!
         return resultValue

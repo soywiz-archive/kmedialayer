@@ -210,7 +210,7 @@ fun gdipKmlLoadImageFromByteArray(data: ByteArray): KmlNativeNativeImageData {
             throw RuntimeException("Can't lock image")
         }
 
-        val out = KmlIntBuffer(bmpData.Width * bmpData.Height)
+        val out = IntArray(bmpData.Width * bmpData.Height)
         var n = 0
         for (y in 0 until bmpData.Height) {
             val p = (bmpData.Scan0.toLong() + (bmpData.Stride * y)).toCPointer<IntVar>()
@@ -259,7 +259,7 @@ fun gdipKmlLoadImage(imageName: String): KmlNativeNativeImageData {
         //println(bmpData.Height)
         //println(bmpData.Stride)
         //println(bmpData.Scan0)
-        val out = KmlIntBuffer(bmpData.Width * bmpData.Height)
+        val out = IntArray(bmpData.Width * bmpData.Height)
         var n = 0
         for (y in 0 until bmpData.Height) {
             val p = (bmpData.Scan0.toLong() + (bmpData.Stride * y)).toCPointer<IntVar>()

@@ -3,6 +3,8 @@ package com.soywiz.kmedialayer.scene
 import com.soywiz.kmedialayer.*
 
 interface SceneApplication {
+    suspend fun changeScene(scene: Scene): Unit
+
     val kml: KmlBase
     val mouse: Mouse
 
@@ -25,6 +27,14 @@ interface SceneApplication {
 
         fun button(index: Int) = buttons.getOrNull(index)
         fun pressing(button: Int) = button(button)?.pressed ?: false
+    }
+
+    class Gamepad {
+        class Button(val id: Int) {
+            var ratio: Float = 0f
+            val pressed: Boolean get() = ratio >= 0.05
+        }
+        val buttons = (0 until 32).map { Button(it) }
     }
 }
 
@@ -53,9 +63,18 @@ class DefaultSceneApplication(v: Boolean, val windowConfig: WindowConfig = Windo
             lastTime = now
         }
 
-        super.render(gl)
+        //super.render(gl)
+        val bgcolor = windowConfig.bgcolor
+        gl.clearColor(bgcolor[0], bgcolor[1], bgcolor[2], bgcolor[3])
+        gl.clear(gl.COLOR_BUFFER_BIT)
         scene.render(renderContext)
         renderContext.flush()
+    }
+
+    override suspend fun changeScene(scene: Scene): Unit {
+        this.scene = scene.apply { this.gl = gl; this.application = this@DefaultSceneApplication; init() }
+        scene.apply { updateScene(0) }
+        Unit
     }
 
     override fun keyUpdate(key: Key, pressed: Boolean) {
@@ -68,8 +87,22 @@ class DefaultSceneApplication(v: Boolean, val windowConfig: WindowConfig = Windo
         }
     }
 
-    override fun gamepadUpdate(button: Int, pressed: Boolean, ratio: Double) {
-        super.gamepadUpdate(button, pressed, ratio)
+    override fun gamepadConnection(player: Int, name: String, connected: Boolean) {
+        scene.apply {
+            _gameConnectionUpdate(player, name, connected)
+        }
+    }
+
+    override fun gamepadButtonUpdate(player: Int, button: GameButton, ratio: Double) {
+        scene.apply {
+            _gameButtonUpdate(player, button, ratio)
+        }
+    }
+
+    override fun gamepadStickUpdate(player: Int, stick: GameStick, x: Double, y: Double) {
+        scene.apply {
+            _gameStickUpdate(player, stick, x, y)
+        }
     }
 
     override val mouse = SceneApplication.Mouse()

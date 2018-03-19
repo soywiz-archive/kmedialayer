@@ -20,6 +20,12 @@ interface KeyComponent : Component {
     fun onKeyDown(key: Key)
 }
 
+interface GamepadComponent : Component {
+    fun onGamepadConnectionUpdate(player: Int, name: String, connected: Boolean)
+    fun onGamepadButtonUpdate(player: Int, button: GameButton, value: Double)
+    fun onGamepadStickUpdate(player: Int, stick: GameStick, x: Double, y: Double)
+}
+
 interface UpdateComponent : Component {
     fun update(ms: Double)
 }

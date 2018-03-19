@@ -1,12 +1,14 @@
 package com.soywiz.kmedialayer.scene
 
 import com.soywiz.kmedialayer.*
+import com.soywiz.kmedialayer.scene.geom.*
 
 // http://en.esotericsoftware.com/forum/Premultiply-Alpha-3132
 class SceneBatcher(val gl: KmlGl, initialWidth: Int, initialHeight: Int) {
     val QUADS = 1024
-    val vertices = KmlFloatBuffer(QUADS * 4 * 4)
-    val indices = KmlShortBuffer(QUADS * 6)
+    val vertices = KmlNativeBuffer(4 * QUADS * 4 * 4)
+    val indices = KmlNativeBuffer(2 * QUADS * 6)
+    var qcount = 0
     var vcount = 0
     var vpos = 0
     var ipos = 0
@@ -47,6 +49,7 @@ class SceneBatcher(val gl: KmlGl, initialWidth: Int, initialHeight: Int) {
 
     private fun reset() {
         currentTex = null
+        qcount = 0
         vcount = 0
         vpos = 0
         ipos = 0
@@ -54,15 +57,15 @@ class SceneBatcher(val gl: KmlGl, initialWidth: Int, initialHeight: Int) {
 
     private fun addVertex(x: Float, y: Float, tx: Float, ty: Float, alpha: Float) {
         vcount++
-        vertices[vpos++] = x
-        vertices[vpos++] = y
-        vertices[vpos++] = tx
-        vertices[vpos++] = ty
-        vertices[vpos++] = alpha
+        vertices.setFloat(vpos++, x)
+        vertices.setFloat(vpos++, y)
+        vertices.setFloat(vpos++, tx)
+        vertices.setFloat(vpos++, ty)
+        vertices.setFloat(vpos++, alpha)
     }
 
     private fun addIndex(index: Int) {
-        indices[ipos++] = index.toShort()
+        indices.setShort(ipos++, index.toShort())
     }
 
     fun addQuad(
@@ -82,16 +85,31 @@ class SceneBatcher(val gl: KmlGl, initialWidth: Int, initialHeight: Int) {
         }
         currentTex = tex.tex
         val vstart = vcount
-        addVertex(x0, y0, tex.left, tex.top, alpha)
-        addVertex(x1, y1, tex.right, tex.top, alpha)
-        addVertex(x2, y2, tex.left, tex.bottom, alpha)
-        addVertex(x3, y3, tex.right, tex.bottom, alpha)
+
+        if (qcount >= QUADS - 1) {
+            flush()
+        }
+        qcount++
+        addVertex(x0, y0, tex.fleft, tex.ftop, alpha)
+        addVertex(x1, y1, tex.fright, tex.ftop, alpha)
+        addVertex(x2, y2, tex.fleft, tex.fbottom, alpha)
+        addVertex(x3, y3, tex.fright, tex.fbottom, alpha)
         addIndex(vstart + 0)
         addIndex(vstart + 1)
         addIndex(vstart + 2)
         addIndex(vstart + 1)
         addIndex(vstart + 2)
         addIndex(vstart + 3)
+    }
+
+    fun addQuad(quad: Quad, tex: SceneTexture, alpha: Float) {
+        addQuad(
+            quad.p0.x.toFloat(), quad.p0.y.toFloat(),
+            quad.p1.x.toFloat(), quad.p1.y.toFloat(),
+            quad.p2.x.toFloat(), quad.p2.y.toFloat(),
+            quad.p3.x.toFloat(), quad.p3.y.toFloat(),
+            tex, alpha
+        )
     }
 
     fun addQuad(left: Float, top: Float, right: Float, bottom: Float, tex: SceneTexture, alpha: Float) {
@@ -122,4 +140,24 @@ class SceneBatcher(val gl: KmlGl, initialWidth: Int, initialHeight: Int) {
             uniformMatrix4fv(program.getUniformLocation("uprojection"), 1, false, ortho)
         }
     }
+
+    fun dispose() {
+
+    }
 }
+
+class Quad {
+    val p0 = Point()
+    val p1 = Point()
+    val p2 = Point()
+    val p3 = Point()
+
+    fun set(gm: Matrix2d, sx: Double, sy: Double, width: Double, height: Double) {
+        p0.setToTransform(gm, sx, sy)
+        p1.setToTransform(gm, sx + width, sy)
+        p2.setToTransform(gm, sx, sy + height)
+        p3.setToTransform(gm, sx + width, sy + height)
+    }
+}
+
+class QuadWithTexture(val quad: Quad, val tex: SceneTexture)

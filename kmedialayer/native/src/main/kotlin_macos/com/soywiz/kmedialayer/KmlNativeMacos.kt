@@ -18,7 +18,11 @@ private val glNative: KmlGlNative by lazy { KmlGlNative() }
 object KmlBaseNativeMacos : KmlBaseNoEventLoop() {
     override fun application(windowConfig: WindowConfig, listener: KMLWindowListener) {
         runApp(object : MyAppHandler() {
-            override fun init(context: NSOpenGLContext?) = runInitBlocking(listener)
+            override fun init(context: NSOpenGLContext?) {
+                macTrace("init[a]")
+                runInitBlocking(listener)
+                macTrace("init[b]")
+            }
 
             override fun mouseUp(x: Int, y: Int, button: Int) = listener.mouseUpdateButton(button, false)
             override fun mouseDown(x: Int, y: Int, button: Int) = listener.mouseUpdateButton(button, true)
@@ -34,20 +38,28 @@ object KmlBaseNativeMacos : KmlBaseNoEventLoop() {
             override fun keyUp(keyCode: Char) = keyChange(keyCode, false)
 
             override fun windowDidResize(width: Int, height: Int, context: NSOpenGLContext?) {
+                macTrace("resize[a]")
                 glNative.viewport(0, 0, width, height)
+                macTrace("resize[b]")
                 listener.resized(width, height)
+                macTrace("resize[b]")
                 //println("RESIZED($width, $height)")
                 //render(context)
                 listener.render(glNative)
+                macTrace("resize[d]")
                 context?.flushBuffer()
+                macTrace("resize[e]")
             }
 
             override fun render(context: NSOpenGLContext?) {
                 //println("FRAME")
                 //glClearColor(0.2f, 0.4f, 0.6f, 1f)
                 //glClear(GL_COLOR_BUFFER_BIT)
+                macTrace("render[a]")
                 listener.render(glNative)
+                macTrace("render[b]")
                 context?.flushBuffer()
+                macTrace("render[c]")
             }
         }, windowConfig)
     }
@@ -72,38 +84,54 @@ object KmlBaseNativeMacos : KmlBaseNoEventLoop() {
     }
 
     fun decodeImageSync(data: ByteArray): KmlNativeImageData {
+        macTrace("decodeImageSync[a]")
         return autoreleasepool {
-            val nsdata = data.usePinned {
-                NSData.alloc()!!.initWithBytes(it.addressOf(0), data.size.toLong())
+            macTrace("decodeImageSync[b]")
+            val nsdata = data.usePinned { dataPin ->
+                NSData.alloc()!!.initWithBytes(dataPin.addressOf(0), data.size.toLong())
             }
+            macTrace("decodeImageSync[c]")
             val image = NSImage.alloc()!!.initWithData(nsdata)!!
             var iwidth = 0
             var iheight = 0
             val imageSize = image.size
+            macTrace("decodeImageSync[d]")
             imageSize.useContents { iwidth = width.toInt(); iheight = height.toInt() }
             val imageRect = NSMakeRect(0.0, 0.0, iwidth.toDouble(), iheight.toDouble())
-
+            macTrace("decodeImageSync[e]")
             val colorSpace = CGColorSpaceCreateWithName(kCGColorSpaceGenericRGB)
-
+            macTrace("decodeImageSync[f]")
+            macTrace("size($iwidth, $iheight)")
             val ctx = CGBitmapContextCreate(
                 null, iwidth.toLong(), iheight.toLong(),
-                8, iwidth.toLong() * 4, colorSpace, CGImageAlphaInfo.kCGImageAlphaPremultipliedLast.value
+                //8, iwidth.toLong() * 4, colorSpace, CGImageAlphaInfo.kCGImageAlphaPremultipliedLast.value
+                8, 0, colorSpace, CGImageAlphaInfo.kCGImageAlphaPremultipliedLast.value
             )
-
+            macTrace("decodeImageSync[g]")
             val gctx = NSGraphicsContext.graphicsContextWithCGContext(ctx, flipped = false)
+            macTrace("decodeImageSync[h]")
 
             NSGraphicsContext.setCurrentContext(gctx)
             image.drawInRect(imageRect)
+            macTrace("decodeImageSync[i]")
 
-            val width = CGBitmapContextGetWidth(ctx);
-            val height = CGBitmapContextGetHeight(ctx);
+            val width = CGBitmapContextGetWidth(ctx).toInt()
+            val height = CGBitmapContextGetHeight(ctx).toInt()
             val pixels = CGBitmapContextGetData(ctx)?.reinterpret<IntVar>()
+            val out = IntArray(width * height)
+            macTrace("decodeImageSync[j]")
+            out.usePinned { outPin ->
+                memcpy(outPin.addressOf(0), pixels, (out.size.toLong() * 4).narrow())
+            }
+            macTrace("decodeImageSync[k]")
             val bytes = pixels!!.readBytes((width * height * 4).toInt())
-            val idata = KmlNativeNativeImageData(width.toInt(), height.toInt(), bytes.toByteBuffer().asIntBuffer())
+            val idata = KmlNativeNativeImageData(width.toInt(), height.toInt(), out)
+            macTrace("decodeImageSync[l]")
 
             NSGraphicsContext.setCurrentContext(null)
             CGContextRelease(ctx)
             CGColorSpaceRelease(colorSpace)
+            macTrace("decodeImageSync[m]")
             idata
         }
     }
@@ -169,6 +197,10 @@ private fun runApp(appHandler: MyAppHandler, windowConfig: WindowConfig) {
     }
 }
 
+fun macTrace(str: String) {
+    println(str)
+}
+
 private class MyAppDelegate(val handler: MyAppHandler, val windowConfig: WindowConfig) : NSObject(),
     NSApplicationDelegateProtocol {
     private val window: NSWindow
@@ -176,6 +208,7 @@ private class MyAppDelegate(val handler: MyAppHandler, val windowConfig: WindowC
     private val appDelegate: AppDelegate
 
     init {
+        macTrace("[a]")
         val mainDisplayRect = NSScreen.mainScreen()!!.frame
         val windowRect = mainDisplayRect.useContents {
             NSMakeRect(
@@ -186,6 +219,7 @@ private class MyAppDelegate(val handler: MyAppHandler, val windowConfig: WindowC
             )
         }
 
+        macTrace("[b]")
         val windowStyle = NSWindowStyleMaskTitled or NSWindowStyleMaskMiniaturizable or
                 NSWindowStyleMaskClosable or NSWindowStyleMaskResizable
 
@@ -199,6 +233,8 @@ private class MyAppDelegate(val handler: MyAppHandler, val windowConfig: WindowC
             0
         )
 
+        macTrace("[c]")
+
         val pixelFormat = attrs.usePinned {
             NSOpenGLPixelFormat.alloc()!!.initWithAttributes(it.addressOf(0).uncheckedCast())!!
         }
@@ -206,6 +242,8 @@ private class MyAppDelegate(val handler: MyAppHandler, val windowConfig: WindowC
         openglView = AppNSOpenGLView(handler, NSMakeRect(0.0, 0.0, 16.0, 16.0), pixelFormat)!!
 
         appDelegate = AppDelegate(handler, openglView, openglView?.openGLContext)
+
+        macTrace("[d]")
 
         window = NSWindow(windowRect, windowStyle, NSBackingStoreBuffered, false).apply {
             title = windowConfig.title
@@ -222,6 +260,8 @@ private class MyAppDelegate(val handler: MyAppHandler, val windowConfig: WindowC
             makeFirstResponder(openglView)
             setContentMinSize(NSMakeSize(150.0, 100.0))
         }
+
+        macTrace("[e]")
     }
 
     override fun applicationShouldTerminateAfterLastWindowClosed(app: NSApplication): Boolean {
@@ -238,11 +278,16 @@ private class MyAppDelegate(val handler: MyAppHandler, val windowConfig: WindowC
         //println("${data.width}, ${data.height}")
 
 
+        macTrace("[f]")
         openglView?.openGLContext?.makeCurrentContext()
         try {
+            macTrace("[g]")
             handler.init(openglView?.openGLContext)
+            macTrace("[h]")
             handler.render(openglView?.openGLContext)
+            macTrace("[i]")
             appDelegate.timer = NSTimer.scheduledTimerWithTimeInterval(1.0 / 60.0, true, ::timer)
+            macTrace("[j]")
         } catch (e: Throwable) {
             e.printStackTrace()
             window.close()
@@ -251,8 +296,10 @@ private class MyAppDelegate(val handler: MyAppHandler, val windowConfig: WindowC
 
 
     private fun timer(timer: NSTimer?) {
+        macTrace("[k]")
         //println("TIMER")
         handler.render(openglView?.openGLContext)
+        macTrace("[l]")
     }
 
     override fun applicationWillTerminate(notification: NSNotification) {

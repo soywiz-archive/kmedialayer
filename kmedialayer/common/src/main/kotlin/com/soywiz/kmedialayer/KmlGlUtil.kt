@@ -114,9 +114,9 @@ class KmlGlVertexLayout(val program: KmlGlProgram) {
 
 fun KmlGlProgram.layout(config: KmlGlVertexLayout.() -> Unit): KmlGlVertexLayout = KmlGlVertexLayout(this).apply(config)
 
-class KmlGlBuffer(val gl: KmlGl, val type: Int, val bufs: KmlIntBuffer) {
+class KmlGlBuffer(val gl: KmlGl, val type: Int, val buf: Int) {
     fun bind() {
-        gl.bindBuffer(type, bufs[0])
+        gl.bindBuffer(type, buf)
     }
 
     fun unbind() {
@@ -132,21 +132,25 @@ class KmlGlBuffer(val gl: KmlGl, val type: Int, val bufs: KmlIntBuffer) {
         }
     }
 
-    fun setData(data: KmlBuffer, size: Int = data.baseBuffer.size): KmlGlBuffer {
+    fun setData(data: KmlNativeBuffer, size: Int = data.size): KmlGlBuffer {
         bind()
         gl.bufferData(type, size, data, gl.STATIC_DRAW)
         return this
     }
 
     fun dispose() {
-        gl.deleteBuffers(bufs.size, bufs)
+        kmlNativeBuffer(4) {
+            gl.deleteBuffers(1, it)
+        }
     }
 }
 
 fun KmlGl.createBuffer(type: Int): KmlGlBuffer {
-    val bufs = KmlIntBuffer(1)
-    genBuffers(1, bufs)
-    return KmlGlBuffer(this, type, bufs)
+    val id = kmlNativeBuffer(4) {
+        genBuffers(1, it)
+        it.getInt(0)
+    }
+    return KmlGlBuffer(this, type, id)
 }
 
 fun KmlGl.createArrayBuffer(): KmlGlBuffer = createBuffer(ARRAY_BUFFER)
@@ -186,10 +190,9 @@ inline fun KmlGlVertexLayout.drawElements(
     }
 }
 
-class KmlGlTex(val gl: KmlGl, val texb: KmlIntBuffer) {
+class KmlGlTex(val gl: KmlGl, val tex: Int) {
     var width = 0
     var height = 0
-    val tex get() = texb[0]
 
     var smooth: Boolean = true
     var clampToEdge: Boolean = true
@@ -206,7 +209,7 @@ class KmlGlTex(val gl: KmlGl, val texb: KmlIntBuffer) {
     fun upload(
         width: Int,
         height: Int,
-        data: KmlBuffer,
+        data: KmlNativeBuffer,
         format: Int = gl.RGBA,
         type: Int = gl.UNSIGNED_BYTE
     ): KmlGlTex {
@@ -215,6 +218,10 @@ class KmlGlTex(val gl: KmlGl, val texb: KmlIntBuffer) {
         this.width = width
         this.height = height
         return this
+    }
+
+    fun upload(width: Int, height: Int, data: IntArray, format: Int = gl.RGBA, type: Int = gl.UNSIGNED_BYTE): KmlGlTex {
+        return data.toTempBuffer { upload(width, height, it, format, type) }
     }
 
     fun upload(data: KmlNativeImageData, format: Int = gl.RGBA, type: Int = gl.UNSIGNED_BYTE): KmlGlTex {
@@ -226,13 +233,18 @@ class KmlGlTex(val gl: KmlGl, val texb: KmlIntBuffer) {
     }
 
     fun dispose() {
-        gl.deleteTextures(1, texb)
+        kmlNativeIntBuffer(1) {
+            it.setInt(0, tex)
+            gl.deleteTextures(1, it)
+        }
     }
 }
 
 fun KmlGl.createKmlTexture(): KmlGlTex {
-    val buf = KmlIntBuffer(1)
-    genTextures(1, buf)
+    val buf = kmlNativeIntBuffer(1) {
+        genTextures(1, it)
+        it.getInt(0)
+    }
     return KmlGlTex(this, buf).upload(1, 1, kmlByteBufferOf(0, 0, 0, 0))
 }
 
@@ -247,36 +259,36 @@ object KmlGlUtil {
         height: Int,
         near: Float = 0f,
         far: Float = 1f,
-        out: KmlFloatBuffer = KmlFloatBuffer(16)
-    ): KmlFloatBuffer {
+        out: KmlNativeBuffer = KmlNativeBuffer(4 * 16)
+    ): KmlNativeBuffer {
         return ortho(height.toFloat(), 0f, 0f, width.toFloat(), near, far, out)
     }
 
     fun ortho(
         bottom: Float, top: Float, left: Float, right: Float,
         near: Float, far: Float,
-        M: KmlFloatBuffer = KmlFloatBuffer(16)
-    ): KmlFloatBuffer {
+        M: KmlNativeBuffer = KmlNativeBuffer(16)
+    ): KmlNativeBuffer {
         // set OpenGL perspective projection matrix
-        M[0] = 2 / (right - left)
-        M[1] = 0f
-        M[2] = 0f
-        M[3] = 0f
+        M.setFloat(0, 2 / (right - left))
+        M.setFloat(1, 0f)
+        M.setFloat(2, 0f)
+        M.setFloat(3, 0f)
 
-        M[4] = 0f
-        M[5] = 2 / (top - bottom)
-        M[6] = 0f
-        M[7] = 0f
+        M.setFloat(4, 0f)
+        M.setFloat(5, 2 / (top - bottom))
+        M.setFloat(6, 0f)
+        M.setFloat(7, 0f)
 
-        M[8] = 0f
-        M[9] = 0f
-        M[10] = -2 / (far - near)
-        M[11] = 0f
+        M.setFloat(8, 0f)
+        M.setFloat(9, 0f)
+        M.setFloat(10, -2 / (far - near))
+        M.setFloat(11, 0f)
 
-        M[12] = -(right + left) / (right - left)
-        M[13] = -(top + bottom) / (top - bottom)
-        M[14] = -(far + near) / (far - near)
-        M[15] = 1f
+        M.setFloat(12, -(right + left) / (right - left))
+        M.setFloat(13, -(top + bottom) / (top - bottom))
+        M.setFloat(14, -(far + near) / (far - near))
+        M.setFloat(15, 1f)
         return M
     }
 }

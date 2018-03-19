@@ -3,6 +3,7 @@ package com.soywiz.kmedialayer.sample
 import com.soywiz.kmedialayer.*
 import com.soywiz.kmedialayer.scene.*
 import com.soywiz.kmedialayer.scene.components.*
+import com.soywiz.kmedialayer.scene.font.*
 import com.soywiz.kmedialayer.scene.geom.*
 
 object KMediaLayerSample2 {
@@ -23,13 +24,26 @@ object KMediaLayerSample2 {
                     //        this[31 - x, x] = 0xFF007000.toInt()
                     //    }
                     //})
+                    println("KMediaLayerSample2.init[a]")
+                    val image2 = kml.decodeImage("mini.png")
+                    val font = getDebugBmpFontOnce()
+                    println("image: $image2")
+                    println("KMediaLayerSample2.init[b]")
                     val tex = texture("mini.png")
+                    println("KMediaLayerSample2.init[c]")
                     //val tex = texture(data)
                     //println(data.size)
                     root += ViewContainer().apply {
                         container = this
+                        launch {
+                            tween(::scale[4.0], time = 2.0)
+                        }
                         //scaleX = 2.0
                         //scaleY = 2.0
+                        this += Text(font, "HELLO WORLD!").also {
+                            it.position(16, 16)
+                        }
+
                         this += Image(tex).apply {
                             name = "image"
                             image = this
@@ -103,8 +117,29 @@ object KMediaLayerSample2 {
                                 }
                             }
                         }
+                        image.gamepad {
+                            down {
+                                println("BUTTON: $it")
+                            }
+                            connected {
+                                println("CONNECTED! $it")
+                            }
+                            disconnected {
+                                println("DISCONNECTED! $it")
+                            }
+                            stick(0, GameStick.LEFT) { x, y ->
+                                println("$x, $y")
+                                image.x += x * 16
+                                image.y += -y * 16
+                            }
+                            down(0, GameButton.BUTTON1) {
+                                println("BUTTON1")
+                            }
+                        }
                     }
+                    println("KMediaLayerSample2.init[c]")
                 }
+
 
                 /*
                 var mouseX: Double = 0.0

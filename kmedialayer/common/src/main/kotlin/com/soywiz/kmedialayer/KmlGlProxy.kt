@@ -91,14 +91,14 @@ open class KmlGlProxy(val parent: KmlGl) : KmlGl() {
        after("blendFuncSeparate", sparams, "$res")
        return res
     }
-    override fun bufferData(target: Int, size: Int, data: KmlBuffer, usage: Int): Unit {
+    override fun bufferData(target: Int, size: Int, data: KmlNativeBuffer, usage: Int): Unit {
        val sparams = "$target, $size, $data, $usage"
        before("bufferData", sparams)
        val res = parent.bufferData(target, size, data, usage)
        after("bufferData", sparams, "$res")
        return res
     }
-    override fun bufferSubData(target: Int, offset: Int, size: Int, data: KmlBuffer): Unit {
+    override fun bufferSubData(target: Int, offset: Int, size: Int, data: KmlNativeBuffer): Unit {
        val sparams = "$target, $offset, $size, $data"
        before("bufferSubData", sparams)
        val res = parent.bufferSubData(target, offset, size, data)
@@ -154,14 +154,14 @@ open class KmlGlProxy(val parent: KmlGl) : KmlGl() {
        after("compileShader", sparams, "$res")
        return res
     }
-    override fun compressedTexImage2D(target: Int, level: Int, internalformat: Int, width: Int, height: Int, border: Int, imageSize: Int, data: KmlBuffer): Unit {
+    override fun compressedTexImage2D(target: Int, level: Int, internalformat: Int, width: Int, height: Int, border: Int, imageSize: Int, data: KmlNativeBuffer): Unit {
        val sparams = "$target, $level, $internalformat, $width, $height, $border, $imageSize, $data"
        before("compressedTexImage2D", sparams)
        val res = parent.compressedTexImage2D(target, level, internalformat, width, height, border, imageSize, data)
        after("compressedTexImage2D", sparams, "$res")
        return res
     }
-    override fun compressedTexSubImage2D(target: Int, level: Int, xoffset: Int, yoffset: Int, width: Int, height: Int, format: Int, imageSize: Int, data: KmlBuffer): Unit {
+    override fun compressedTexSubImage2D(target: Int, level: Int, xoffset: Int, yoffset: Int, width: Int, height: Int, format: Int, imageSize: Int, data: KmlNativeBuffer): Unit {
        val sparams = "$target, $level, $xoffset, $yoffset, $width, $height, $format, $imageSize, $data"
        before("compressedTexSubImage2D", sparams)
        val res = parent.compressedTexSubImage2D(target, level, xoffset, yoffset, width, height, format, imageSize, data)
@@ -203,14 +203,14 @@ open class KmlGlProxy(val parent: KmlGl) : KmlGl() {
        after("cullFace", sparams, "$res")
        return res
     }
-    override fun deleteBuffers(n: Int, items: KmlBuffer): Unit {
+    override fun deleteBuffers(n: Int, items: KmlNativeBuffer): Unit {
        val sparams = "$n, $items"
        before("deleteBuffers", sparams)
        val res = parent.deleteBuffers(n, items)
        after("deleteBuffers", sparams, "$res")
        return res
     }
-    override fun deleteFramebuffers(n: Int, items: KmlBuffer): Unit {
+    override fun deleteFramebuffers(n: Int, items: KmlNativeBuffer): Unit {
        val sparams = "$n, $items"
        before("deleteFramebuffers", sparams)
        val res = parent.deleteFramebuffers(n, items)
@@ -224,7 +224,7 @@ open class KmlGlProxy(val parent: KmlGl) : KmlGl() {
        after("deleteProgram", sparams, "$res")
        return res
     }
-    override fun deleteRenderbuffers(n: Int, items: KmlBuffer): Unit {
+    override fun deleteRenderbuffers(n: Int, items: KmlNativeBuffer): Unit {
        val sparams = "$n, $items"
        before("deleteRenderbuffers", sparams)
        val res = parent.deleteRenderbuffers(n, items)
@@ -238,7 +238,7 @@ open class KmlGlProxy(val parent: KmlGl) : KmlGl() {
        after("deleteShader", sparams, "$res")
        return res
     }
-    override fun deleteTextures(n: Int, items: KmlBuffer): Unit {
+    override fun deleteTextures(n: Int, items: KmlNativeBuffer): Unit {
        val sparams = "$n, $items"
        before("deleteTextures", sparams)
        val res = parent.deleteTextures(n, items)
@@ -350,7 +350,7 @@ open class KmlGlProxy(val parent: KmlGl) : KmlGl() {
        after("frontFace", sparams, "$res")
        return res
     }
-    override fun genBuffers(n: Int, buffers: KmlBuffer): Unit {
+    override fun genBuffers(n: Int, buffers: KmlNativeBuffer): Unit {
        val sparams = "$n, $buffers"
        before("genBuffers", sparams)
        val res = parent.genBuffers(n, buffers)
@@ -364,42 +364,42 @@ open class KmlGlProxy(val parent: KmlGl) : KmlGl() {
        after("generateMipmap", sparams, "$res")
        return res
     }
-    override fun genFramebuffers(n: Int, framebuffers: KmlBuffer): Unit {
+    override fun genFramebuffers(n: Int, framebuffers: KmlNativeBuffer): Unit {
        val sparams = "$n, $framebuffers"
        before("genFramebuffers", sparams)
        val res = parent.genFramebuffers(n, framebuffers)
        after("genFramebuffers", sparams, "$res")
        return res
     }
-    override fun genRenderbuffers(n: Int, renderbuffers: KmlBuffer): Unit {
+    override fun genRenderbuffers(n: Int, renderbuffers: KmlNativeBuffer): Unit {
        val sparams = "$n, $renderbuffers"
        before("genRenderbuffers", sparams)
        val res = parent.genRenderbuffers(n, renderbuffers)
        after("genRenderbuffers", sparams, "$res")
        return res
     }
-    override fun genTextures(n: Int, textures: KmlBuffer): Unit {
+    override fun genTextures(n: Int, textures: KmlNativeBuffer): Unit {
        val sparams = "$n, $textures"
        before("genTextures", sparams)
        val res = parent.genTextures(n, textures)
        after("genTextures", sparams, "$res")
        return res
     }
-    override fun getActiveAttrib(program: Int, index: Int, bufSize: Int, length: KmlBuffer, size: KmlBuffer, type: KmlBuffer, name: KmlBuffer): Unit {
+    override fun getActiveAttrib(program: Int, index: Int, bufSize: Int, length: KmlNativeBuffer, size: KmlNativeBuffer, type: KmlNativeBuffer, name: KmlNativeBuffer): Unit {
        val sparams = "$program, $index, $bufSize, $length, $size, $type, $name"
        before("getActiveAttrib", sparams)
        val res = parent.getActiveAttrib(program, index, bufSize, length, size, type, name)
        after("getActiveAttrib", sparams, "$res")
        return res
     }
-    override fun getActiveUniform(program: Int, index: Int, bufSize: Int, length: KmlBuffer, size: KmlBuffer, type: KmlBuffer, name: KmlBuffer): Unit {
+    override fun getActiveUniform(program: Int, index: Int, bufSize: Int, length: KmlNativeBuffer, size: KmlNativeBuffer, type: KmlNativeBuffer, name: KmlNativeBuffer): Unit {
        val sparams = "$program, $index, $bufSize, $length, $size, $type, $name"
        before("getActiveUniform", sparams)
        val res = parent.getActiveUniform(program, index, bufSize, length, size, type, name)
        after("getActiveUniform", sparams, "$res")
        return res
     }
-    override fun getAttachedShaders(program: Int, maxCount: Int, count: KmlBuffer, shaders: KmlBuffer): Unit {
+    override fun getAttachedShaders(program: Int, maxCount: Int, count: KmlNativeBuffer, shaders: KmlNativeBuffer): Unit {
        val sparams = "$program, $maxCount, $count, $shaders"
        before("getAttachedShaders", sparams)
        val res = parent.getAttachedShaders(program, maxCount, count, shaders)
@@ -420,14 +420,14 @@ open class KmlGlProxy(val parent: KmlGl) : KmlGl() {
        after("getUniformLocation", sparams, "$res")
        return res
     }
-    override fun getBooleanv(pname: Int, data: KmlBuffer): Unit {
+    override fun getBooleanv(pname: Int, data: KmlNativeBuffer): Unit {
        val sparams = "$pname, $data"
        before("getBooleanv", sparams)
        val res = parent.getBooleanv(pname, data)
        after("getBooleanv", sparams, "$res")
        return res
     }
-    override fun getBufferParameteriv(target: Int, pname: Int, params: KmlBuffer): Unit {
+    override fun getBufferParameteriv(target: Int, pname: Int, params: KmlNativeBuffer): Unit {
        val sparams = "$target, $pname, $params"
        before("getBufferParameteriv", sparams)
        val res = parent.getBufferParameteriv(target, pname, params)
@@ -441,70 +441,70 @@ open class KmlGlProxy(val parent: KmlGl) : KmlGl() {
        after("getError", sparams, "$res")
        return res
     }
-    override fun getFloatv(pname: Int, data: KmlBuffer): Unit {
+    override fun getFloatv(pname: Int, data: KmlNativeBuffer): Unit {
        val sparams = "$pname, $data"
        before("getFloatv", sparams)
        val res = parent.getFloatv(pname, data)
        after("getFloatv", sparams, "$res")
        return res
     }
-    override fun getFramebufferAttachmentParameteriv(target: Int, attachment: Int, pname: Int, params: KmlBuffer): Unit {
+    override fun getFramebufferAttachmentParameteriv(target: Int, attachment: Int, pname: Int, params: KmlNativeBuffer): Unit {
        val sparams = "$target, $attachment, $pname, $params"
        before("getFramebufferAttachmentParameteriv", sparams)
        val res = parent.getFramebufferAttachmentParameteriv(target, attachment, pname, params)
        after("getFramebufferAttachmentParameteriv", sparams, "$res")
        return res
     }
-    override fun getIntegerv(pname: Int, data: KmlBuffer): Unit {
+    override fun getIntegerv(pname: Int, data: KmlNativeBuffer): Unit {
        val sparams = "$pname, $data"
        before("getIntegerv", sparams)
        val res = parent.getIntegerv(pname, data)
        after("getIntegerv", sparams, "$res")
        return res
     }
-    override fun getProgramInfoLog(program: Int, bufSize: Int, length: KmlBuffer, infoLog: KmlBuffer): Unit {
+    override fun getProgramInfoLog(program: Int, bufSize: Int, length: KmlNativeBuffer, infoLog: KmlNativeBuffer): Unit {
        val sparams = "$program, $bufSize, $length, $infoLog"
        before("getProgramInfoLog", sparams)
        val res = parent.getProgramInfoLog(program, bufSize, length, infoLog)
        after("getProgramInfoLog", sparams, "$res")
        return res
     }
-    override fun getRenderbufferParameteriv(target: Int, pname: Int, params: KmlBuffer): Unit {
+    override fun getRenderbufferParameteriv(target: Int, pname: Int, params: KmlNativeBuffer): Unit {
        val sparams = "$target, $pname, $params"
        before("getRenderbufferParameteriv", sparams)
        val res = parent.getRenderbufferParameteriv(target, pname, params)
        after("getRenderbufferParameteriv", sparams, "$res")
        return res
     }
-    override fun getProgramiv(program: Int, pname: Int, params: KmlBuffer): Unit {
+    override fun getProgramiv(program: Int, pname: Int, params: KmlNativeBuffer): Unit {
        val sparams = "$program, $pname, $params"
        before("getProgramiv", sparams)
        val res = parent.getProgramiv(program, pname, params)
        after("getProgramiv", sparams, "$res")
        return res
     }
-    override fun getShaderiv(shader: Int, pname: Int, params: KmlBuffer): Unit {
+    override fun getShaderiv(shader: Int, pname: Int, params: KmlNativeBuffer): Unit {
        val sparams = "$shader, $pname, $params"
        before("getShaderiv", sparams)
        val res = parent.getShaderiv(shader, pname, params)
        after("getShaderiv", sparams, "$res")
        return res
     }
-    override fun getShaderInfoLog(shader: Int, bufSize: Int, length: KmlBuffer, infoLog: KmlBuffer): Unit {
+    override fun getShaderInfoLog(shader: Int, bufSize: Int, length: KmlNativeBuffer, infoLog: KmlNativeBuffer): Unit {
        val sparams = "$shader, $bufSize, $length, $infoLog"
        before("getShaderInfoLog", sparams)
        val res = parent.getShaderInfoLog(shader, bufSize, length, infoLog)
        after("getShaderInfoLog", sparams, "$res")
        return res
     }
-    override fun getShaderPrecisionFormat(shadertype: Int, precisiontype: Int, range: KmlBuffer, precision: KmlBuffer): Unit {
+    override fun getShaderPrecisionFormat(shadertype: Int, precisiontype: Int, range: KmlNativeBuffer, precision: KmlNativeBuffer): Unit {
        val sparams = "$shadertype, $precisiontype, $range, $precision"
        before("getShaderPrecisionFormat", sparams)
        val res = parent.getShaderPrecisionFormat(shadertype, precisiontype, range, precision)
        after("getShaderPrecisionFormat", sparams, "$res")
        return res
     }
-    override fun getShaderSource(shader: Int, bufSize: Int, length: KmlBuffer, source: KmlBuffer): Unit {
+    override fun getShaderSource(shader: Int, bufSize: Int, length: KmlNativeBuffer, source: KmlNativeBuffer): Unit {
        val sparams = "$shader, $bufSize, $length, $source"
        before("getShaderSource", sparams)
        val res = parent.getShaderSource(shader, bufSize, length, source)
@@ -518,49 +518,49 @@ open class KmlGlProxy(val parent: KmlGl) : KmlGl() {
        after("getString", sparams, "$res")
        return res
     }
-    override fun getTexParameterfv(target: Int, pname: Int, params: KmlBuffer): Unit {
+    override fun getTexParameterfv(target: Int, pname: Int, params: KmlNativeBuffer): Unit {
        val sparams = "$target, $pname, $params"
        before("getTexParameterfv", sparams)
        val res = parent.getTexParameterfv(target, pname, params)
        after("getTexParameterfv", sparams, "$res")
        return res
     }
-    override fun getTexParameteriv(target: Int, pname: Int, params: KmlBuffer): Unit {
+    override fun getTexParameteriv(target: Int, pname: Int, params: KmlNativeBuffer): Unit {
        val sparams = "$target, $pname, $params"
        before("getTexParameteriv", sparams)
        val res = parent.getTexParameteriv(target, pname, params)
        after("getTexParameteriv", sparams, "$res")
        return res
     }
-    override fun getUniformfv(program: Int, location: Int, params: KmlBuffer): Unit {
+    override fun getUniformfv(program: Int, location: Int, params: KmlNativeBuffer): Unit {
        val sparams = "$program, $location, $params"
        before("getUniformfv", sparams)
        val res = parent.getUniformfv(program, location, params)
        after("getUniformfv", sparams, "$res")
        return res
     }
-    override fun getUniformiv(program: Int, location: Int, params: KmlBuffer): Unit {
+    override fun getUniformiv(program: Int, location: Int, params: KmlNativeBuffer): Unit {
        val sparams = "$program, $location, $params"
        before("getUniformiv", sparams)
        val res = parent.getUniformiv(program, location, params)
        after("getUniformiv", sparams, "$res")
        return res
     }
-    override fun getVertexAttribfv(index: Int, pname: Int, params: KmlBuffer): Unit {
+    override fun getVertexAttribfv(index: Int, pname: Int, params: KmlNativeBuffer): Unit {
        val sparams = "$index, $pname, $params"
        before("getVertexAttribfv", sparams)
        val res = parent.getVertexAttribfv(index, pname, params)
        after("getVertexAttribfv", sparams, "$res")
        return res
     }
-    override fun getVertexAttribiv(index: Int, pname: Int, params: KmlBuffer): Unit {
+    override fun getVertexAttribiv(index: Int, pname: Int, params: KmlNativeBuffer): Unit {
        val sparams = "$index, $pname, $params"
        before("getVertexAttribiv", sparams)
        val res = parent.getVertexAttribiv(index, pname, params)
        after("getVertexAttribiv", sparams, "$res")
        return res
     }
-    override fun getVertexAttribPointerv(index: Int, pname: Int, pointer: KmlBuffer): Unit {
+    override fun getVertexAttribPointerv(index: Int, pname: Int, pointer: KmlNativeBuffer): Unit {
        val sparams = "$index, $pname, $pointer"
        before("getVertexAttribPointerv", sparams)
        val res = parent.getVertexAttribPointerv(index, pname, pointer)
@@ -651,7 +651,7 @@ open class KmlGlProxy(val parent: KmlGl) : KmlGl() {
        after("polygonOffset", sparams, "$res")
        return res
     }
-    override fun readPixels(x: Int, y: Int, width: Int, height: Int, format: Int, type: Int, pixels: KmlBuffer): Unit {
+    override fun readPixels(x: Int, y: Int, width: Int, height: Int, format: Int, type: Int, pixels: KmlNativeBuffer): Unit {
        val sparams = "$x, $y, $width, $height, $format, $type, $pixels"
        before("readPixels", sparams)
        val res = parent.readPixels(x, y, width, height, format, type, pixels)
@@ -686,7 +686,7 @@ open class KmlGlProxy(val parent: KmlGl) : KmlGl() {
        after("scissor", sparams, "$res")
        return res
     }
-    override fun shaderBinary(count: Int, shaders: KmlBuffer, binaryformat: Int, binary: KmlBuffer, length: Int): Unit {
+    override fun shaderBinary(count: Int, shaders: KmlNativeBuffer, binaryformat: Int, binary: KmlNativeBuffer, length: Int): Unit {
        val sparams = "$count, $shaders, $binaryformat, $binary, $length"
        before("shaderBinary", sparams)
        val res = parent.shaderBinary(count, shaders, binaryformat, binary, length)
@@ -742,7 +742,7 @@ open class KmlGlProxy(val parent: KmlGl) : KmlGl() {
        after("stencilOpSeparate", sparams, "$res")
        return res
     }
-    override fun texImage2D(target: Int, level: Int, internalformat: Int, width: Int, height: Int, border: Int, format: Int, type: Int, pixels: KmlBuffer): Unit {
+    override fun texImage2D(target: Int, level: Int, internalformat: Int, width: Int, height: Int, border: Int, format: Int, type: Int, pixels: KmlNativeBuffer): Unit {
        val sparams = "$target, $level, $internalformat, $width, $height, $border, $format, $type, $pixels"
        before("texImage2D", sparams)
        val res = parent.texImage2D(target, level, internalformat, width, height, border, format, type, pixels)
@@ -763,7 +763,7 @@ open class KmlGlProxy(val parent: KmlGl) : KmlGl() {
        after("texParameterf", sparams, "$res")
        return res
     }
-    override fun texParameterfv(target: Int, pname: Int, params: KmlBuffer): Unit {
+    override fun texParameterfv(target: Int, pname: Int, params: KmlNativeBuffer): Unit {
        val sparams = "$target, $pname, $params"
        before("texParameterfv", sparams)
        val res = parent.texParameterfv(target, pname, params)
@@ -777,14 +777,14 @@ open class KmlGlProxy(val parent: KmlGl) : KmlGl() {
        after("texParameteri", sparams, "$res")
        return res
     }
-    override fun texParameteriv(target: Int, pname: Int, params: KmlBuffer): Unit {
+    override fun texParameteriv(target: Int, pname: Int, params: KmlNativeBuffer): Unit {
        val sparams = "$target, $pname, $params"
        before("texParameteriv", sparams)
        val res = parent.texParameteriv(target, pname, params)
        after("texParameteriv", sparams, "$res")
        return res
     }
-    override fun texSubImage2D(target: Int, level: Int, xoffset: Int, yoffset: Int, width: Int, height: Int, format: Int, type: Int, pixels: KmlBuffer): Unit {
+    override fun texSubImage2D(target: Int, level: Int, xoffset: Int, yoffset: Int, width: Int, height: Int, format: Int, type: Int, pixels: KmlNativeBuffer): Unit {
        val sparams = "$target, $level, $xoffset, $yoffset, $width, $height, $format, $type, $pixels"
        before("texSubImage2D", sparams)
        val res = parent.texSubImage2D(target, level, xoffset, yoffset, width, height, format, type, pixels)
@@ -798,7 +798,7 @@ open class KmlGlProxy(val parent: KmlGl) : KmlGl() {
        after("uniform1f", sparams, "$res")
        return res
     }
-    override fun uniform1fv(location: Int, count: Int, value: KmlBuffer): Unit {
+    override fun uniform1fv(location: Int, count: Int, value: KmlNativeBuffer): Unit {
        val sparams = "$location, $count, $value"
        before("uniform1fv", sparams)
        val res = parent.uniform1fv(location, count, value)
@@ -812,7 +812,7 @@ open class KmlGlProxy(val parent: KmlGl) : KmlGl() {
        after("uniform1i", sparams, "$res")
        return res
     }
-    override fun uniform1iv(location: Int, count: Int, value: KmlBuffer): Unit {
+    override fun uniform1iv(location: Int, count: Int, value: KmlNativeBuffer): Unit {
        val sparams = "$location, $count, $value"
        before("uniform1iv", sparams)
        val res = parent.uniform1iv(location, count, value)
@@ -826,7 +826,7 @@ open class KmlGlProxy(val parent: KmlGl) : KmlGl() {
        after("uniform2f", sparams, "$res")
        return res
     }
-    override fun uniform2fv(location: Int, count: Int, value: KmlBuffer): Unit {
+    override fun uniform2fv(location: Int, count: Int, value: KmlNativeBuffer): Unit {
        val sparams = "$location, $count, $value"
        before("uniform2fv", sparams)
        val res = parent.uniform2fv(location, count, value)
@@ -840,7 +840,7 @@ open class KmlGlProxy(val parent: KmlGl) : KmlGl() {
        after("uniform2i", sparams, "$res")
        return res
     }
-    override fun uniform2iv(location: Int, count: Int, value: KmlBuffer): Unit {
+    override fun uniform2iv(location: Int, count: Int, value: KmlNativeBuffer): Unit {
        val sparams = "$location, $count, $value"
        before("uniform2iv", sparams)
        val res = parent.uniform2iv(location, count, value)
@@ -854,7 +854,7 @@ open class KmlGlProxy(val parent: KmlGl) : KmlGl() {
        after("uniform3f", sparams, "$res")
        return res
     }
-    override fun uniform3fv(location: Int, count: Int, value: KmlBuffer): Unit {
+    override fun uniform3fv(location: Int, count: Int, value: KmlNativeBuffer): Unit {
        val sparams = "$location, $count, $value"
        before("uniform3fv", sparams)
        val res = parent.uniform3fv(location, count, value)
@@ -868,7 +868,7 @@ open class KmlGlProxy(val parent: KmlGl) : KmlGl() {
        after("uniform3i", sparams, "$res")
        return res
     }
-    override fun uniform3iv(location: Int, count: Int, value: KmlBuffer): Unit {
+    override fun uniform3iv(location: Int, count: Int, value: KmlNativeBuffer): Unit {
        val sparams = "$location, $count, $value"
        before("uniform3iv", sparams)
        val res = parent.uniform3iv(location, count, value)
@@ -882,7 +882,7 @@ open class KmlGlProxy(val parent: KmlGl) : KmlGl() {
        after("uniform4f", sparams, "$res")
        return res
     }
-    override fun uniform4fv(location: Int, count: Int, value: KmlBuffer): Unit {
+    override fun uniform4fv(location: Int, count: Int, value: KmlNativeBuffer): Unit {
        val sparams = "$location, $count, $value"
        before("uniform4fv", sparams)
        val res = parent.uniform4fv(location, count, value)
@@ -896,28 +896,28 @@ open class KmlGlProxy(val parent: KmlGl) : KmlGl() {
        after("uniform4i", sparams, "$res")
        return res
     }
-    override fun uniform4iv(location: Int, count: Int, value: KmlBuffer): Unit {
+    override fun uniform4iv(location: Int, count: Int, value: KmlNativeBuffer): Unit {
        val sparams = "$location, $count, $value"
        before("uniform4iv", sparams)
        val res = parent.uniform4iv(location, count, value)
        after("uniform4iv", sparams, "$res")
        return res
     }
-    override fun uniformMatrix2fv(location: Int, count: Int, transpose: Boolean, value: KmlBuffer): Unit {
+    override fun uniformMatrix2fv(location: Int, count: Int, transpose: Boolean, value: KmlNativeBuffer): Unit {
        val sparams = "$location, $count, $transpose, $value"
        before("uniformMatrix2fv", sparams)
        val res = parent.uniformMatrix2fv(location, count, transpose, value)
        after("uniformMatrix2fv", sparams, "$res")
        return res
     }
-    override fun uniformMatrix3fv(location: Int, count: Int, transpose: Boolean, value: KmlBuffer): Unit {
+    override fun uniformMatrix3fv(location: Int, count: Int, transpose: Boolean, value: KmlNativeBuffer): Unit {
        val sparams = "$location, $count, $transpose, $value"
        before("uniformMatrix3fv", sparams)
        val res = parent.uniformMatrix3fv(location, count, transpose, value)
        after("uniformMatrix3fv", sparams, "$res")
        return res
     }
-    override fun uniformMatrix4fv(location: Int, count: Int, transpose: Boolean, value: KmlBuffer): Unit {
+    override fun uniformMatrix4fv(location: Int, count: Int, transpose: Boolean, value: KmlNativeBuffer): Unit {
        val sparams = "$location, $count, $transpose, $value"
        before("uniformMatrix4fv", sparams)
        val res = parent.uniformMatrix4fv(location, count, transpose, value)
@@ -945,7 +945,7 @@ open class KmlGlProxy(val parent: KmlGl) : KmlGl() {
        after("vertexAttrib1f", sparams, "$res")
        return res
     }
-    override fun vertexAttrib1fv(index: Int, v: KmlBuffer): Unit {
+    override fun vertexAttrib1fv(index: Int, v: KmlNativeBuffer): Unit {
        val sparams = "$index, $v"
        before("vertexAttrib1fv", sparams)
        val res = parent.vertexAttrib1fv(index, v)
@@ -959,7 +959,7 @@ open class KmlGlProxy(val parent: KmlGl) : KmlGl() {
        after("vertexAttrib2f", sparams, "$res")
        return res
     }
-    override fun vertexAttrib2fv(index: Int, v: KmlBuffer): Unit {
+    override fun vertexAttrib2fv(index: Int, v: KmlNativeBuffer): Unit {
        val sparams = "$index, $v"
        before("vertexAttrib2fv", sparams)
        val res = parent.vertexAttrib2fv(index, v)
@@ -973,7 +973,7 @@ open class KmlGlProxy(val parent: KmlGl) : KmlGl() {
        after("vertexAttrib3f", sparams, "$res")
        return res
     }
-    override fun vertexAttrib3fv(index: Int, v: KmlBuffer): Unit {
+    override fun vertexAttrib3fv(index: Int, v: KmlNativeBuffer): Unit {
        val sparams = "$index, $v"
        before("vertexAttrib3fv", sparams)
        val res = parent.vertexAttrib3fv(index, v)
@@ -987,7 +987,7 @@ open class KmlGlProxy(val parent: KmlGl) : KmlGl() {
        after("vertexAttrib4f", sparams, "$res")
        return res
     }
-    override fun vertexAttrib4fv(index: Int, v: KmlBuffer): Unit {
+    override fun vertexAttrib4fv(index: Int, v: KmlNativeBuffer): Unit {
        val sparams = "$index, $v"
        before("vertexAttrib4fv", sparams)
        val res = parent.vertexAttrib4fv(index, v)

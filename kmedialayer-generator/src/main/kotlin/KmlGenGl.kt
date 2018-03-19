@@ -5,7 +5,7 @@ object KmlGenGl {
         printToFile("kmedialayer/common/src/main/kotlin/com/soywiz/kmedialayer/KmlGlProxy.kt") { generateProxy() }
         printToFile("kmedialayer/common/src/main/kotlin/com/soywiz/kmedialayer/KmlGlDummy.kt") { generateDummy() }
         printToFile("kmedialayer/android/src/main/kotlin/com/soywiz/kmedialayer/KmlGlAndroid.kt") { generateAndroid() }
-        printToFile("kmedialayer/jvm/src/main/kotlin/com/soywiz/kmedialayer/KmlGlJvm.kt") { generateJvm() }
+        //printToFile("kmedialayer/jvm/src/main/kotlin/com/soywiz/kmedialayer/KmlGlJvm.kt") { generateJvm() } // Manually modified
         printToFile("kmedialayer/js/src/main/kotlin/com/soywiz/kmedialayer/KmlGlJsCanvas.kt") { generateJs() }
         printToFile("kmedialayer/native/src/main/kotlin_macos/com/soywiz/kmedialayer/KmlGlNative.kt") {
             generateNative(NativeTarget.MACOS)
@@ -367,20 +367,20 @@ object OpenglDesc {
         override fun toNative(param: String): String = "$param.unsafeAddress().uncheckedCast()"
     }
 
-    object GlVoidPtr : GlTypePtr("KmlBuffer") {
+    object GlVoidPtr : GlTypePtr("KmlNativeBuffer") {
         override fun toJSParam(param: String): String = "$param.arrayUByte"
     }
 
-    object GlIntPtr : GlTypePtr("KmlBuffer") {
+    object GlIntPtr : GlTypePtr("KmlNativeBuffer") {
         override fun toAndroid(param: String): String = "$param.nioIntBuffer"
     }
 
-    object GlCharPtr : GlTypePtr("KmlBuffer")
-    object GlFloatPtr : GlTypePtr("KmlBuffer") {
+    object GlCharPtr : GlTypePtr("KmlNativeBuffer")
+    object GlFloatPtr : GlTypePtr("KmlNativeBuffer") {
         override fun toAndroid(param: String): String = "$param.nioFloatBuffer"
     }
 
-    object GlBoolPtr : GlTypePtr("KmlBuffer") {
+    object GlBoolPtr : GlTypePtr("KmlNativeBuffer") {
         override fun toAndroid(param: String): String = "$param.nioIntBuffer"
     }
 
@@ -944,7 +944,7 @@ object OpenglDesc {
             "type" to GlIntPtr,
             "name" to GlCharPtr,
             jsBody = "run { val info = gl.getActiveAttrib(program.get(), index)!!; size.arrayInt[0] = info.size; type.arrayInt[0] = info.type; name.putAsciiString(info.name); length.arrayInt[0] = info.size + 1 }",
-            androidBody = "run { val alen = IntArray(1) ; val asize = IntArray(1) ; val atype = IntArray(1) ; val aname = ByteArray(name.baseBuffer.size); glGetActiveAttrib(program, index, bufSize, alen, 0, asize, 0, atype, 0, aname, 0); length.asIntBuffer()[0] = alen[0]; size.asIntBuffer()[0] = asize[0]; type.asIntBuffer()[0] = atype[0]; name.putAsciiString(aname.toString(Charsets.US_ASCII)) }"
+            androidBody = "run { val alen = IntArray(1) ; val asize = IntArray(1) ; val atype = IntArray(1) ; val aname = ByteArray(name.size); glGetActiveAttrib(program, index, bufSize, alen, 0, asize, 0, atype, 0, aname, 0); length.setInt(0, alen[0]); size.setInt(0, asize[0]); type.setInt(0, atype[0]); name.putAsciiString(aname.toString(Charsets.US_ASCII)) }"
         )
 
         function(
@@ -958,7 +958,7 @@ object OpenglDesc {
             "type" to GlIntPtr,
             "name" to GlCharPtr,
             jsBody = "run { val info = gl.getActiveUniform(program.get(), index)!!; size.arrayInt[0] = info.size; type.arrayInt[0] = info.type; name.putAsciiString(info.name); length.arrayInt[0] = info.size + 1 }",
-            androidBody = "run { val alen = IntArray(1) ; val asize = IntArray(1) ; val atype = IntArray(1) ; val aname = ByteArray(name.baseBuffer.size); glGetActiveUniform(program, index, bufSize, alen, 0, asize, 0, atype, 0, aname, 0); length.asIntBuffer()[0] = alen[0]; size.asIntBuffer()[0] = asize[0]; type.asIntBuffer()[0] = atype[0]; name.putAsciiString(aname.toString(Charsets.US_ASCII)) }"
+            androidBody = "run { val alen = IntArray(1) ; val asize = IntArray(1) ; val atype = IntArray(1) ; val aname = ByteArray(name.size); glGetActiveUniform(program, index, bufSize, alen, 0, asize, 0, atype, 0, aname, 0); length.setInt(0, alen[0]); size.setInt(0, asize[0]); type.setInt(0, atype[0]); name.putAsciiString(aname.toString(Charsets.US_ASCII)) }"
         )
 
         function(
@@ -1249,7 +1249,7 @@ object OpenglDesc {
             "data" to GlNativeImageData,
             jsBody = "gl.texImage2D(target, level, internalformat, format, type, (data as KmlImgNativeImageData).img)",
             jvmBody = "glTexImage2D(target, level, internalformat, data.width, data.height, 0, format, type, (data as BufferedImageKmlNativeImageData).buffer)",
-            nativeBody = "glTexImage2D(target, level, internalformat, data.width, data.height, 0, format, type, (data as KmlNativeNativeImageData).data.unsafeAddress().uncheckedCast())",
+            nativeBody = "(data as KmlNativeNativeImageData).data.usePinned { dataPin -> glTexImage2D(target, level, internalformat, data.width, data.height, 0, format, type, dataPin.addressOf(0).uncheckedCast()) }",
             androidBody = "TODO()", core = true
         )
 

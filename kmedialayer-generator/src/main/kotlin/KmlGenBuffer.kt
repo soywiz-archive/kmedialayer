@@ -24,9 +24,9 @@ object KmlGenBuffer {
         println("")
         println("package com.soywiz.kmedialayer")
         println("")
-        println("interface KmlBuffer { val baseBuffer: KmlBufferBase }")
-        println("expect class KmlBufferBase : KmlBuffer {")
-        println("    override val baseBuffer: KmlBufferBase")
+        println("fun kmlInternalRoundUp(n: Int, m: Int) = if (n >= 0) ((n + m - 1) / m) * m else (n / m) * m")
+        println("")
+        println("expect class KmlNativeBuffer {")
         println("    val size: Int")
         println("    constructor(size: Int)")
         println("")
@@ -34,8 +34,10 @@ object KmlGenBuffer {
             println("    fun get${type.name}(index: Int): ${type.name}")
             println("    fun set${type.name}(index: Int, value: ${type.name}): Unit")
         }
+        println("    fun dispose()")
         println("}")
         println("")
+        /*
         for (type in types) {
             val name = type.name
             val bufferName = "Kml${name}Buffer"
@@ -62,6 +64,7 @@ object KmlGenBuffer {
             println("fun $bufferName.to${name}Array(): $arrayName = $arrayName(this.size).also { for (n in 0 until this.size) it[n] = this[n] }")
             println("")
         }
+        */
     }
 
     fun Printer.generateJvm() {
@@ -69,25 +72,25 @@ object KmlGenBuffer {
         println("")
         println("import java.nio.*")
         println("")
-        println("actual class KmlBufferBase private constructor(val nioBuffer: ByteBuffer) : KmlBuffer {")
-        println("    val byteBuffeer = nioBuffer")
-        println("    val shortBuffer = nioBuffer.asShortBuffer()")
-        println("    val intBuffer = nioBuffer.asIntBuffer()")
-        println("    val floatBuffer = nioBuffer.asFloatBuffer()")
-        println("    actual override val baseBuffer: KmlBufferBase = this")
-        println("    actual val size: Int = nioBuffer.limit()")
-        println("    actual constructor(size: Int) : this(ByteBuffer.allocateDirect(size).order(ByteOrder.nativeOrder()))")
+        println("actual class KmlNativeBuffer constructor(val baseByteBuffer: ByteBuffer) {")
+        println("    val byteBuffer = baseByteBuffer")
+        println("    val shortBuffer = baseByteBuffer.asShortBuffer()")
+        println("    val intBuffer = baseByteBuffer.asIntBuffer()")
+        println("    val floatBuffer = baseByteBuffer.asFloatBuffer()")
+        println("    actual val size: Int = baseByteBuffer.limit()")
+        println("    actual constructor(size: Int) : this(ByteBuffer.allocateDirect(kmlInternalRoundUp(size, 8)).order(ByteOrder.nativeOrder()))")
         println("")
         for (type in types) {
-            println("    actual fun get${type.name}(index: Int): ${type.name} = nioBuffer.get${type.bbMethodName}(index * ${type.size})")
-            println("    actual fun set${type.name}(index: Int, value: ${type.name}): Unit = run { nioBuffer.put${type.bbMethodName}(index * ${type.size}, value) }")
+            println("    actual fun get${type.name}(index: Int): ${type.name} = baseByteBuffer.get${type.bbMethodName}(index * ${type.size})")
+            println("    actual fun set${type.name}(index: Int, value: ${type.name}): Unit = run { baseByteBuffer.put${type.bbMethodName}(index * ${type.size}, value) }")
         }
+        println("    actual fun dispose() = Unit")
         println("}")
-        println("@Suppress(\"USELESS_CAST\") val KmlBuffer.nioBuffer: ByteBuffer get() = (baseBuffer as KmlBufferBase).nioBuffer")
-        println("@Suppress(\"USELESS_CAST\") val KmlBuffer.nioByteBuffer: ByteBuffer get() = (baseBuffer as KmlBufferBase).nioBuffer")
-        println("@Suppress(\"USELESS_CAST\") val KmlBuffer.nioShortBuffer: ShortBuffer get() = (baseBuffer as KmlBufferBase).shortBuffer")
-        println("@Suppress(\"USELESS_CAST\") val KmlBuffer.nioIntBuffer: IntBuffer get() = (baseBuffer as KmlBufferBase).intBuffer")
-        println("@Suppress(\"USELESS_CAST\") val KmlBuffer.nioFloatBuffer: FloatBuffer get() = (baseBuffer as KmlBufferBase).floatBuffer")
+        println("@Suppress(\"USELESS_CAST\") val KmlNativeBuffer.nioBuffer: ByteBuffer get() = (this as KmlNativeBuffer).byteBuffer")
+        println("@Suppress(\"USELESS_CAST\") val KmlNativeBuffer.nioByteBuffer: ByteBuffer get() = (this as KmlNativeBuffer).byteBuffer")
+        println("@Suppress(\"USELESS_CAST\") val KmlNativeBuffer.nioShortBuffer: ShortBuffer get() = (this as KmlNativeBuffer).shortBuffer")
+        println("@Suppress(\"USELESS_CAST\") val KmlNativeBuffer.nioIntBuffer: IntBuffer get() = (this as KmlNativeBuffer).intBuffer")
+        println("@Suppress(\"USELESS_CAST\") val KmlNativeBuffer.nioFloatBuffer: FloatBuffer get() = (this as KmlNativeBuffer).floatBuffer")
         println("")
     }
 
@@ -96,29 +99,27 @@ object KmlGenBuffer {
         println("")
         println("import org.khronos.webgl.*")
         println("")
-        println("private fun roundUp(n: Int, m: Int) = if (n >= 0) ((n + m - 1) / m) * m else (n / m) * m")
-        println("")
-        println("actual class KmlBufferBase private constructor(val arrayBuffer: ArrayBuffer) : KmlBuffer {")
+        println("actual class KmlNativeBuffer constructor(val arrayBuffer: ArrayBuffer) {")
         println("   val arrayByte = Int8Array(arrayBuffer)")
         println("   val arrayUByte = Uint8Array(arrayBuffer)")
         println("   val arrayShort = Int16Array(arrayBuffer)")
         println("   val arrayInt = Int32Array(arrayBuffer)")
         println("   val arrayFloat = Float32Array(arrayBuffer)")
-        println("   actual override val baseBuffer: KmlBufferBase = this")
         println("   actual val size: Int = arrayBuffer.byteLength")
-        println("   actual constructor(size: Int) : this(ArrayBuffer(roundUp(size, 8)))")
+        println("   actual constructor(size: Int) : this(ArrayBuffer(kmlInternalRoundUp(size, 8)))")
         println("")
         for (type in types) {
             println("    actual fun get${type.name}(index: Int): ${type.name} = array${type.name}[index]")
             println("    actual fun set${type.name}(index: Int, value: ${type.name}): Unit = run { array${type.name}[index] = value }")
         }
+        println("    actual fun dispose() = Unit")
         println("}")
-        println("@Suppress(\"USELESS_CAST\") val KmlBuffer.arrayBuffer: ArrayBuffer get() = (baseBuffer as KmlBufferBase).arrayBuffer")
-        println("@Suppress(\"USELESS_CAST\") val KmlBuffer.arrayByte: Int8Array get() = (baseBuffer as KmlBufferBase).arrayByte")
-        println("@Suppress(\"USELESS_CAST\") val KmlBuffer.arrayUByte: Uint8Array get() = (baseBuffer as KmlBufferBase).arrayUByte")
-        println("@Suppress(\"USELESS_CAST\") val KmlBuffer.arrayShort: Int16Array get() = (baseBuffer as KmlBufferBase).arrayShort")
-        println("@Suppress(\"USELESS_CAST\") val KmlBuffer.arrayInt: Int32Array get() = (baseBuffer as KmlBufferBase).arrayInt")
-        println("@Suppress(\"USELESS_CAST\") val KmlBuffer.arrayFloat: Float32Array get() = (baseBuffer as KmlBufferBase).arrayFloat")
+        println("@Suppress(\"USELESS_CAST\") val KmlNativeBuffer.arrayBuffer: ArrayBuffer get() = (this as KmlNativeBuffer).arrayBuffer")
+        println("@Suppress(\"USELESS_CAST\") val KmlNativeBuffer.arrayByte: Int8Array get() = (this as KmlNativeBuffer).arrayByte")
+        println("@Suppress(\"USELESS_CAST\") val KmlNativeBuffer.arrayUByte: Uint8Array get() = (this as KmlNativeBuffer).arrayUByte")
+        println("@Suppress(\"USELESS_CAST\") val KmlNativeBuffer.arrayShort: Int16Array get() = (this as KmlNativeBuffer).arrayShort")
+        println("@Suppress(\"USELESS_CAST\") val KmlNativeBuffer.arrayInt: Int32Array get() = (this as KmlNativeBuffer).arrayInt")
+        println("@Suppress(\"USELESS_CAST\") val KmlNativeBuffer.arrayFloat: Float32Array get() = (this as KmlNativeBuffer).arrayFloat")
         println("")
     }
 
@@ -128,31 +129,18 @@ object KmlGenBuffer {
         println("import konan.*")
         println("import kotlinx.cinterop.*")
         println("")
-        println("private fun roundUp(n: Int, m: Int) = if (n >= 0) ((n + m - 1) / m) * m else (n / m) * m")
-        println("")
-        println("actual class KmlBufferBase private constructor(val data: ByteArray) : KmlBuffer {")
-        //for (type in types) {
-        //    println("    val data${type.name}: ${type.name}Array = data.uncheckedCast()")
-        //}
-        println("    actual override val baseBuffer: KmlBufferBase = this")
-        println("    actual val size: Int = data.size")
-        println("    actual constructor(size: Int) : this(ByteArray(roundUp(size, 8)))")
+        println("actual class KmlNativeBuffer constructor(val placement: NativeFreeablePlacement, val ptr: NativePtr, actual val size: Int) {")
+        println("    actual constructor(size: Int) : this(nativeHeap, nativeHeap.allocArray<ByteVar>(kmlInternalRoundUp(size, 8)).uncheckedCast(), size)")
         println("")
         for (type in types) {
             val tname = type.name
             val tsize = type.size
-            when (type) {
-                KmlByte -> {
-                    println("    actual inline fun get$tname(index: Int): $tname = data[index]")
-                    println("    actual inline fun set$tname(index: Int, value: $tname): Unit { data[index] = value }")
-                }
-                else -> {
-                    println("    actual inline fun get$tname(index: Int): $tname = data.${tname.toLowerCase()}At(index * $tsize)")
-                    println("    actual inline fun set$tname(index: Int, value: $tname): Unit { data.set${tname}At(index * $tsize, value) }")
-                }
-            }
+            println("    actual inline fun get$tname(index: Int): $tname = (ptr + index.toLong() * $tsize).uncheckedCast<${tname}VarOf<$tname>>().value")
+            println("    actual inline fun set$tname(index: Int, value: $tname): Unit { (ptr + index.toLong() * $tsize).uncheckedCast<${tname}VarOf<$tname>>().value = value }")
         }
+        println("    actual fun dispose() = run { placement.free(ptr) }")
         println("}")
+        println("fun KmlNativeBuffer.unsafeAddress(): CPointer<ByteVar> = this.ptr.uncheckedCast()")
         println("")
     }
 }

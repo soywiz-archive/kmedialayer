@@ -141,10 +141,14 @@ object KmlBaseNative : KmlBaseNoEventLoop() {
             SDL_FreeSurface(img)
             val width = img[0].w
             val height = img[0].h
-            val pixels = img[0].pixels!!.readBytes(width * height * 4)
+            val pixels = img[0].pixels!!
+            val out = IntArray(width * height)
+            out.usePinned { outPinned ->
+                memcpy(outPinned.addressOf(0), pixels, out.size * 4)
+            }
             SDL_FreeSurface(imgRaw.uncheckedCast())
             dataPin.unpin()
-            KmlNativeNativeImageData(width, height, pixels.toByteBuffer().asIntBuffer())
+            KmlNativeNativeImageData(width, height, out)
         }
     }
 
@@ -155,26 +159,6 @@ object KmlBaseNative : KmlBaseNoEventLoop() {
     override suspend fun writeFileBytes(path: String, data: ByteArray, offset: Long?): Unit {
         TODO("KmlBase.writeFileBytes")
     }
-}
-
-fun readBytes(fileName: String, range: LongRange? = null): ByteArray {
-    val file = fopen(fileName, "rb") ?: throw RuntimeException("Can't open file $fileName")
-    fseek(file, 0, SEEK_END)
-    val endPos = ftell(file)
-    //println("endPos: $endPos")
-    val start = range?.start ?: 0L
-    val count = range?.endInclusive?.minus(1) ?: (endPos - start)
-    fseek(file, start.narrow(), SEEK_SET)
-    //println("seek: ${start}")
-    val bytes = memScoped {
-        val ptr = allocArray<ByteVar>(count)
-        val readCount = fread(ptr, 1, count.narrow(), file).toInt()
-        //println("count: ${count}")
-        //println("readCount: $readCount")
-        ptr.readBytes(readCount)
-    }
-    fclose(file)
-    return bytes
 }
 
 actual val Kml: KmlBase = KmlBaseNative
@@ -280,8 +264,3 @@ private val KEYS = mapOf(
     -1 to Key.RIGHT_BRACKET,
     -1 to Key.APOSTROPHE
 )
-
-class KmlNativeNativeImageData(override val width: Int, override val height: Int, val data: KmlBuffer) :
-    KmlNativeImageData {
-
-}

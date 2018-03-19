@@ -32,6 +32,10 @@ object KmlBaseJs : KmlBase() {
             listener.mouseUpdateButton(me.button.toInt(), pressed)
         }
 
+        val gl = KmlGlJsCanvas(canvas)
+
+        listener.init(gl)
+
         window.addEventListener("mousemove", { e: Event -> mouseUpdate(e as MouseEvent) })
         window.addEventListener("mousedown", { e: Event -> mouseUpdateButtons(e as MouseEvent, true) })
         window.addEventListener("mouseup", { e: Event -> mouseUpdateButtons(e as MouseEvent, false) })
@@ -43,10 +47,6 @@ object KmlBaseJs : KmlBase() {
         window.addEventListener("keyup", { e: Event ->
             listener.keyUpdate(KEYS[(e as KeyboardEvent).keyCode] ?: Key.UNKNOWN, false)
         })
-
-        val gl = KmlGlJsCanvas(canvas)
-
-        listener.init(gl)
 
         if (mustAppendCanvas) {
             fun resize() {
